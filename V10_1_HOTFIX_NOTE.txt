@@ -1,0 +1,11 @@
+Brivviant Studio FINAL UI V10.1 HOTFIX
+
+Fixes live Supabase permission issue that caused:
+تعذر تحديث البيانات. تأكد من اتصالك وحاول تاني.
+
+Root cause:
+- authenticated users did not have EXECUTE on bv_private.can_read_task
+- authenticated users did not have EXECUTE on bv_private.action
+
+The live Studio Supabase project has already been fixed and verified with an authenticated end-to-end transaction.
+No UI/layout/CSS changes from FINAL UI V10.

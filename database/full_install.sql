@@ -95,7 +95,8 @@ as $$
   )
  )
 $$;
-revoke all on function bv_private.can_read_task(uuid) from public, anon, authenticated;
+revoke all on function bv_private.can_read_task(uuid) from public, anon;
+grant execute on function bv_private.can_read_task(uuid) to authenticated;
 
 drop policy if exists bv_profile_read on public.bv_profiles;
 create policy bv_profile_read on public.bv_profiles for select to authenticated
@@ -251,7 +252,8 @@ begin
  update public.bv_profiles set touched_at=n where id=u;
  return jsonb_build_object('id',out_id,'ok',true,'server_time',n);
 end $$;
-revoke all on function bv_private.action(text,jsonb) from public,anon,authenticated;
+revoke all on function bv_private.action(text,jsonb) from public,anon;
+grant execute on function bv_private.action(text,jsonb) to authenticated;
 
 create or replace function public.bv_action(p_action text,p jsonb)
 returns jsonb language sql security invoker set search_path=''
