@@ -1,7 +1,7 @@
 {
-  "name": "Brivviant Studio Realtime Task System — Accounts V4",
+  "name": "Brivviant Studio Realtime Task System — Accounts V5",
   "short_name": "Brivviant Studio",
-  "start_url": "./index.html?v=20260923-accounts4",
+  "start_url": "./index.html?v=20260923-accounts5",
   "display": "standalone",
   "background_color": "#070909",
   "theme_color": "#070909",

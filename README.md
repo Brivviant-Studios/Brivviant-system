@@ -116,3 +116,10 @@ Submit → CEO Request Revision → Round جديد → Start → Submit → Appr
 - كل مستخدم لديه Change Password ويمكنه وضع باسورد خاص به.
 - في Team Panel يظهر `Default / Reset Password: 123456` كمرجع. الباسورد الخاص بعد تغييره لا يتم تخزينه أو عرضه كنص صريح.
 - للوصول لأول مرة إذا كل باسوردات الـCEO مجهولة: اعمل Reset يدوي **لحساب CEO واحد فقط** في Supabase Auth، ادخل به، ثم استخدم Reset All من Team Panel.
+
+
+## Accounts V5
+- Team Panel reads `uses_default_password` from Supabase.
+- Displays `123456` only while the account is still on the default/reset password.
+- Displays `Changed` after the user changes their password.
+- All six current accounts were reset successfully to `123456` on 2026-09-23.
