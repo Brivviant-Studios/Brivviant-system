@@ -1,0 +1,15 @@
+BRIVVIANT STUDIO — CLEAN V2
+
+Why this build exists:
+- The Supabase project "Studio" contains legacy tables named studio_* with old June 2026 data.
+- The new realtime system uses ONLY bv_* tables.
+- CLEAN V2 removes/unregisters previous browser Service Workers and deletes old browser caches on first load.
+- No legacy studio_* data is queried by this frontend.
+- Legacy database rows have NOT been deleted; they remain isolated in Supabase.
+
+New system data sources:
+- bv_profiles
+- bv_tasks
+- bv_assignments
+- bv_requests
+- bv_activity

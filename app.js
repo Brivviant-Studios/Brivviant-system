@@ -4,6 +4,10 @@
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
   });
 
+  
+  const FORBIDDEN_OLD_TABLE_PREFIX = "studio_";
+  const BUILD_DATA_SOURCE = Object.freeze(["bv_profiles","bv_tasks","bv_assignments","bv_requests","bv_activity"]);
+
   const state = {
     session: null, me: null, profiles: [], tasks: [], assignments: [], requests: [], activity: [],
     serverOffset: 0, view: "dashboard", taskFilter: "all", realtimeChannel: null, refreshTimer: null
@@ -292,6 +296,6 @@
   });
 
   setInterval(updateTimers,1000);
-  if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  // CLEAN V2: service worker intentionally disabled to prevent stale Studio builds.
   SB.auth.getSession().then(({data})=>{if(!data.session){byId("loginOverlay").classList.remove("hidden")}});
 })();
