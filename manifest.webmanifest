@@ -1,7 +1,7 @@
 {
-  "name": "Brivviant Studio Realtime Task System — Clean V2",
+  "name": "Brivviant Studio Realtime Task System — Roles V3",
   "short_name": "Brivviant Studio",
-  "start_url": "./index.html?v=20260923-clean2",
+  "start_url": "./index.html?v=20260923-roles3",
   "display": "standalone",
   "background_color": "#070909",
   "theme_color": "#070909",

@@ -18,7 +18,7 @@
   const esc = (v="") => String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const isoLocal = (d) => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
   const fmtDate = (v) => v ? new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v)) : "—";
-  const roleName = r => ({ceo:"CEO",coordinator:"Coordinator",employee:"Employee"})[r] || r;
+  const roleName = r => ({ceo:"CEO",coordinator:"Project Manager",employee:"Designer"})[r] || r;
   const nowServer = () => Date.now() + state.serverOffset;
   const fmtMs = (ms=0) => {
     ms=Math.max(0,Number(ms)||0); const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
@@ -270,12 +270,17 @@
       byId("manageRequestId").value=r.id;byId("manageRequestStatus").value=r.status;byId("manageRequestResponse").value=r.response||"";open("requestManageDialog");return;
     }
     if(btn.dataset.userReset){
-      const p=person(btn.dataset.userReset), pass=prompt(`Temporary password جديد لـ ${p?.name} (12 حرف على الأقل):`);if(!pass)return;
+      const p=person(btn.dataset.userReset), pass=prompt(`Temporary password جديد لـ ${p?.name} (6 أحرف على الأقل):`);if(!pass)return;
       try{await accountAction({action:"reset_password",user_id:p.id,password:pass});toast("تم Reset Password وسيُطلب تغييره عند الدخول.")}catch(err){toast(err.message,true)}return;
     }
     if(btn.dataset.userEdit){
       const p=person(btn.dataset.userEdit);if(!p)return;
-      const name=prompt("الاسم:",p.name);if(name===null)return;const role=prompt("Role: ceo / coordinator / employee",p.role);if(role===null)return;
+      const name=prompt("الاسم:",p.name);if(name===null)return;
+      const shown=roleName(p.role);
+      const entered=prompt("Job Title: CEO / Project Manager / Designer",shown);if(entered===null)return;
+      const roleMap={"ceo":"ceo","CEO":"ceo","project manager":"coordinator","Project Manager":"coordinator","designer":"employee","Designer":"employee"};
+      const role=roleMap[String(entered).trim()]||roleMap[String(entered).trim().toLowerCase()];
+      if(!role){toast("اكتب CEO أو Project Manager أو Designer.",true);return;}
       const active=confirm("OK = Active / Cancel = Disabled");
       try{await accountAction({action:"update_user",user_id:p.id,name,role,active});toast("تم تحديث الحساب.");await refreshState()}catch(err){toast(err.message,true)}return;
     }

@@ -1,0 +1,16 @@
+BRIVVIANT STUDIO — ROLES V3
+New visible job titles:
+- CEO
+- Project Manager
+- Designer
+
+Backend mapping:
+- CEO -> ceo
+- Project Manager -> coordinator
+- Designer -> employee
+
+Account system:
+- CEO can create accounts and select one of the three job titles.
+- Every user has Change Password.
+- Minimum password length is 6.
+- Existing accounts still require a one-time password reset in Supabase if their current password is unknown.

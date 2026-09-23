@@ -16,9 +16,9 @@
 - `mohamed.zidan` — CEO
 - `mohamed.farouk` — CEO
 - `seif.akram` — CEO
-- `emy` — Coordinator
-- `oscar` — Employee
-- `youssef` — Employee
+- `emy` — Project Manager
+- `oscar` — Designer
+- `youssef` — Designer
 
 كلمات المرور لا يتم تخزينها أو تصديرها داخل الـZIP. هي موجودة في Supabase Auth.
 الـCEO يقدر يعمل Reset Password لأي حساب من شاشة **Team**.
@@ -35,7 +35,7 @@
 - يدير الحسابات ويعمل Reset Password.
 - يرى Activity Log.
 
-### EMY / Coordinator
+### EMY / Project Manager
 - تدخل Tasks جديدة.
 - ترى التاسكات والإدارة التشغيلية.
 - لا توزع Tasks.
@@ -43,7 +43,7 @@
 - لا تعتمد التسليم ولا تطلب Revision.
 - لا تدير الحسابات.
 
-### Employee
+### Designer
 - يرى فقط Tasks الموزعة عليه.
 - يبدأ التاسك بزر **بدء المشروع**.
 - Timer يبدأ من السيرفر، وليس من ساعة الجهاز.
@@ -53,7 +53,7 @@
 - يرى Requests الخاصة به فقط.
 
 ## دورة التاسك
-Create → Assign → Employee Start → Live Timer → Submit → CEO Approve
+Create → Assign → Designer Start → Live Timer → Submit → CEO Approve
 أو:
 Submit → CEO Request Revision → Round جديد → Start → Submit → Approve
 
@@ -88,3 +88,22 @@ Submit → CEO Request Revision → Round جديد → Start → Submit → Appr
 
 ## مهم
 `database/full_install.sql` مخصص لمشروع جديد فقط. **لا تشغله على Studio الحالي** لأن الـBackend الحالي موجود بالفعل.
+
+
+## Job Titles in V3
+واجهة النظام تعرض الوظائف كالتالي:
+- CEO
+- Project Manager
+- Designer
+
+للتوافق مع الـBackend الحالي:
+- Project Manager = `coordinator`
+- Designer = `employee`
+
+هذا mapping داخلي فقط، والمستخدم يرى المسميات الجديدة في الـPanel.
+
+## Passwords
+- النظام الآن يسمح بكلمات مرور تبدأ من 6 أحرف.
+- كل حساب يمكنه تغيير كلمة مروره من داخل النظام.
+- الـCEO يستطيع Reset Password لحسابات الفريق من Team.
+- كلمة المرور `123456` مقبولة فنيًا في النظام الحالي.

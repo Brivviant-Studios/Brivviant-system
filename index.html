@@ -7,7 +7,7 @@
   <title>Brivviant Studio — Realtime Tasks</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/brivviant-logo.png">
-  <link rel="stylesheet" href="style.css?v=20260923-clean2">
+  <link rel="stylesheet" href="style.css?v=20260923-roles3">
 </head>
 <body>
   <script>
@@ -198,8 +198,8 @@
       <h3>حساب جديد</h3>
       <label>الاسم<input id="newUserName" required></label>
       <label>Username<input id="newUsername" pattern="[a-z0-9.]{3,40}" required placeholder="name.surname"></label>
-      <label>Role<select id="newUserRole"><option value="employee">Employee</option><option value="coordinator">Coordinator</option><option value="ceo">CEO</option></select></label>
-      <label>Temporary Password<input id="newUserPassword" type="password" minlength="12" maxlength="128" required></label>
+      <label>Job Title<select id="newUserRole"><option value="employee">Designer</option><option value="coordinator">Project Manager</option><option value="ceo">CEO</option></select></label>
+      <label>Temporary Password<input id="newUserPassword" type="password" minlength="6" maxlength="128" required></label>
       <p class="muted">الحساب الجديد سيُطلب منه تغيير كلمة المرور عند أول دخول.</p>
       <div class="dialog-actions"><button type="button" class="ghost" data-close>إلغاء</button><button class="primary" type="submit">إنشاء</button></div>
     </form>
@@ -210,14 +210,14 @@
       <h3>تغيير كلمة المرور</h3>
       <p id="passwordForceText" class="muted"></p>
       <label>كلمة المرور الحالية<input id="currentPassword" type="password" required></label>
-      <label>كلمة المرور الجديدة<input id="newPassword" type="password" minlength="12" maxlength="128" required></label>
-      <label>تأكيد كلمة المرور<input id="confirmPassword" type="password" minlength="12" maxlength="128" required></label>
+      <label>كلمة المرور الجديدة<input id="newPassword" type="password" minlength="6" maxlength="128" required></label>
+      <label>تأكيد كلمة المرور<input id="confirmPassword" type="password" minlength="6" maxlength="128" required></label>
       <div class="dialog-actions"><button id="passwordCancelBtn" type="button" class="ghost" data-close>إلغاء</button><button class="primary" type="submit">تغيير</button></div>
     </form>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
-  <script src="config.js?v=20260923-clean2"></script>
-  <script src="app.js?v=20260923-clean2"></script>
+  <script src="config.js?v=20260923-roles3"></script>
+  <script src="app.js?v=20260923-roles3"></script>
 </body>
 </html>
