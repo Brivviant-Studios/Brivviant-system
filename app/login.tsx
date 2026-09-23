@@ -17,7 +17,7 @@ export default function Login(){
   return <main className="login-shell">
     <section className="brand-panel" aria-label="Brivviant Studios">
       <span className="brand-kicker">BRIVVIANT / TEAM WORKSPACE</span>
-      <img className="brand-logo" src="/brivviant-logo.png" alt="Brivviant Studios"/>
+      <img className="brand-logo" src="brivviant-logo.png" alt="Brivviant Studios"/>
       <div className="brand-bottom"><span>مساحة الفريق</span><span>التاسكات · الوقت · التسليم</span></div>
     </section>
     <section className="login-panel"><div className="login-content">
@@ -32,6 +32,6 @@ export default function Login(){
         <Button type="submit" className="login-submit" disabled={busy}>{busy?'جاري الدخول…':'تسجيل الدخول'} <ArrowLeft size={19}/></Button>
         {error&&<p className="setup-notice" role="alert">{error}</p>}<p className="login-help">نسيت كلمة المرور؟ تواصل مع الإدارة لإعادة تعيينها.</p>
       </form>
-    </div><footer>Brivviant Studios <span>مساحة عمل خاصة بالفريق</span></footer></section>
+    </div><footer>Brivviant Studios · V6.1 <span>مساحة عمل خاصة بالفريق</span></footer></section>
   </main>;
 }

@@ -1,37 +1,24 @@
-BRIVVIANT STUDIO — SYSTEM CONFIRMATION
-Date: 2026-09-23
+BRIVVIANT STUDIO SYSTEM — V7.0 — 2026-09-23
 
-LIVE PROJECT
-- Supabase project: Studio
-- Project ref: viwaclirvokwoeqqivgr
-- Status checked: ACTIVE_HEALTHY
+LIVE SUPABASE PROJECT
+https://viwaclirvokwoeqqivgr.supabase.co
+Migration applied: requests_timer_activity_v7
 
-CONFIRMED ACCOUNTS
-- Mohamed Zidan / mohamed.zidan / CEO
-- Mohamed Farouk / mohamed.farouk / CEO
-- Seif Akram / seif.akram / CEO
-- EMY / emy / Coordinator
-- OSCAR / oscar / Employee
-- Youssef / youssef / Employee
+V7 VERIFIED CHANGES
+- Every assigned member (including CEO/coordinator/employee) can Start, Pause, Resume and Submit ONLY their own assignment timer.
+- started_at stores the first Start time and does not change after Pause/Resume.
+- CEO cannot pause/resume another member's timer.
+- Management has a global Activity Log tab backed by public.bv_activity in Supabase.
+- Task actions logged: create, assign, start/receive, pause, resume, submit, delay, approve, revision, edit, delete.
+- Request/complaint actions logged: create, approve/set execution time, complete, reopen, delete.
+- Requests & complaints are displayed as a management table with owner, kind, details, status, sent time, approved execution time, and actions.
+- CEO can delete requests/complaints. Delete is a soft delete: hidden from the active table but retained in Supabase with deleted_at/deleted_by and audit log.
+- When a request is moved to progress (approved), an execution time is required and saved in Supabase.
+- Existing task/request/history data is preserved.
+- Realtime refresh remains enabled for bv_requests and bv_activity.
 
-CONFIRMED WORKFLOW
-- CEO + Coordinator can create tasks.
-- CEO only can assign tasks.
-- Employee only can start own assigned task.
-- Timer is server-based using elapsed_ms + running_since.
-- CEO only can pause/resume employee timers.
-- Employee submits with Google Drive URL.
-- Late submissions require delay reason.
-- CEO only can approve.
-- CEO only can request revisions.
-- Revision creates a new round.
-- Old revision rounds are deactivated by database trigger.
-- Employee requests/complaints are private to the creator; CEO can see/manage all.
-- Realtime enabled for bv_profiles, bv_tasks, bv_assignments, bv_requests, bv_activity.
-- Optimistic task versioning is enforced by backend.
-- Account management is handled by brivviant-accounts Edge Function.
-- Temporary passwords must be changed before operational actions.
+DATABASE UPGRADE FILE
+/database/20260923_requests_timer_activity_v7.sql
 
-SECURITY NOTE
-Passwords are not stored in this ZIP and cannot be exported from Supabase Auth.
-Use CEO > Team > Reset Password when a credential must be replaced.
+VERIFICATION
+A rollback-only transaction test passed on live Supabase for self Start/Pause/Resume, immutable first Start time, cross-user timer denial, request approval time, request deletion, and activity logging.

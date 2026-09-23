@@ -23,9 +23,9 @@ export function validateTaskInput(actor:Actor,input:{title:string;brief:string;d
  if(!Number.isFinite(input.dueAt)||input.dueAt<=now)throw new Error('اختر موعد تسليم قادمًا بالتاريخ والساعة.');
  validateDriveLink(input.driveUrl);return input;
 }
-export function validateDistribution(actor:Actor,userIds:string[],activeEmployeeIds:string[]){
+export function validateDistribution(actor:Actor,userIds:string[],activeMemberIds:string[]){
  requireCEO(actor);
- if(!userIds.length||new Set(userIds).size!==userIds.length||userIds.some(id=>!activeEmployeeIds.includes(id)))throw new Error('اختر موظفًا واحدًا على الأقل من الموظفين المتاحين.');
+ if(!userIds.length||new Set(userIds).size!==userIds.length||userIds.some(id=>!activeMemberIds.includes(id)))throw new Error('اختر عضوًا مفعّلًا واحدًا على الأقل.');
 }
 export function elapsedMs(a:Assignment,now:number){return a.accumulatedMs+(a.runningSince===null?0:Math.max(0,now-a.runningSince));}
 export function taskStatus(t:Task){
@@ -37,8 +37,7 @@ export function taskStatus(t:Task){
 export function transitionAssignment(actor:Actor,task:Task,a:Assignment,action:'start'|'pause'|'resume'|'submit',now:number,data?:{submissionUrl?:string;delayReason?:string}):Assignment{
  if(task.approved)throw new Error('التاسك معتمد بالفعل.');
  if(!task.assignments.some(x=>x.userId===a.userId))throw new Error('لم يتم توزيع التاسك على هذا الموظف.');
- if(action==='pause'||action==='resume')requireCEO(actor);
- else if(actor.id!==a.userId)throw new Error('يمكنك بدء وتسليم التاسكات المسندة إليك فقط.');
+ if(actor.id!==a.userId)throw new Error('يمكنك بدء وإيقاف واستكمال وتسليم التكليفات المسندة إليك فقط.');
  if(action==='start'){
   if(a.status!=='assigned')throw new Error('التاسك بدأ بالفعل.');
   return {...a,status:'working',runningSince:now,firstStartedAt:a.firstStartedAt??now};

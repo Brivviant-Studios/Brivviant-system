@@ -1,8 +1,8 @@
 export type Profile={id:string;name:string;username:string;role:'ceo'|'coordinator'|'employee';active:boolean;must_change:boolean};
 export type Task={id:string;title:string;brief:string;drive_url:string;due_at:string;round:number;approved_at:string|null;created_at:string;updated_at:string;created_by:string;version:number};
 export type Assignment={id:string;task_id:string;user_id:string;round:number;active:boolean;status:string;elapsed_ms:number;running_since:string|null;started_at:string|null;submitted_at:string|null;submission_url:string|null;delay_reason:string|null};
-export type RequestItem={id:string;created_by:string;kind:string;title:string;body:string;status:string;response:string;created_at:string;updated_at:string};
-export type Activity={id:number;task_id:string;actor:string;action:string;detail:string;created_at:string};
+export type RequestItem={id:string;created_by:string;kind:string;title:string;body:string;status:string;response:string;execution_due_at:string|null;approved_at:string|null;approved_by:string|null;deleted_at:string|null;deleted_by:string|null;created_at:string;updated_at:string};
+export type Activity={id:number;task_id:string|null;request_id:string|null;assignment_id:string|null;actor:string;action:string;detail:string;created_at:string};
 export type State={server_time:string;profiles:Profile[];tasks:Task[];assignments:Assignment[];requests:RequestItem[];activity:Activity[]};
 export const roleLabel={ceo:'CEO',coordinator:'تنسيق التاسكات',employee:'فريق التصميم'};
 export const statusLabel:Record<string,string>={unassigned:'بانتظار التوزيع',assigned:'لم يبدأ',working:'شغال',paused:'متوقف',submitted:'تم التسليم',review:'بانتظار الاعتماد',approved:'معتمد'};

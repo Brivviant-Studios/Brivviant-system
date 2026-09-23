@@ -36,9 +36,7 @@ begin
   elsif p_action in ('start','pause','resume','submit','delay') then
    select * into a from public.bv_assignments where id=(p->>'assignment_id')::uuid and task_id=t.id and round=t.round and active for update;
    if not found then raise exception 'التاسك غير مسند لهذا الموظف.'; end if;
-   if p_action in ('pause','resume') then
-    if r<>'ceo' then raise exception 'إيقاف واستكمال التايمر للـCEO فقط.'; end if;
-   elsif a.user_id<>u then raise exception 'هذا الإجراء لصاحب التاسك فقط.'; end if;
+   if a.user_id<>u then raise exception 'البدء والإيقاف والاستكمال والتسليم متاحين لصاحب التكليف فقط.'; end if;
    if p_action='start' then
     if a.status<>'assigned' then raise exception 'التاسك بدأ بالفعل.'; end if;
     update public.bv_assignments set status='working',running_since=n,started_at=coalesce(started_at,n) where id=a.id;
