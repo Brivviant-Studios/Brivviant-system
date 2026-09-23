@@ -168,8 +168,8 @@
   }
   function renderTeam(){
     if(state.me.role!=="ceo") return;
-    byId("teamList").innerHTML=state.profiles.map(p=>`<article class="user-card"><div class="request-head"><div><h4>${esc(p.name)}</h4><small>${esc(p.username)}</small></div><span class="badge ${p.active?"mint":"danger"}">${p.active?"Active":"Disabled"}</span></div><div class="task-meta" style="margin-top:10px"><span class="badge blue">${roleName(p.role)}</span>${p.must_change?`<span class="badge warn">Must change password</span>`:""}</div><div class="actions">
-    <button data-user-edit="${p.id}">تعديل</button>${p.id!==state.me.id?`<button data-user-reset="${p.id}">Reset Password</button>`:""}</div></article>`).join("");
+    byId("teamList").innerHTML=state.profiles.map(p=>`<article class="user-card"><div class="request-head"><div><h4>${esc(p.name)}</h4><small>${esc(p.username)}</small></div><span class="badge ${p.active?"mint":"danger"}">${p.active?"Active":"Disabled"}</span></div><div class="task-meta" style="margin-top:10px"><span class="badge blue">${roleName(p.role)}</span>${p.must_change?`<span class="badge warn">Must change password</span>`:""}</div><div class="password-reference"><small>Default / Reset Password</small><b>123456</b></div><div class="actions">
+    <button data-user-edit="${p.id}">تعديل</button>${p.id!==state.me.id?`<button data-user-reset="${p.id}">Reset → 123456</button>`:""}</div></article>`).join("");
   }
   function renderActivity(){
     const rows=state.activity.filter(a=>{
@@ -258,9 +258,17 @@
   byId("requestManageForm").addEventListener("submit",async e=>{
     e.preventDefault();try{await action("update_request",{id:byId("manageRequestId").value,status:byId("manageRequestStatus").value,response:byId("manageRequestResponse").value.trim()});byId("requestManageDialog").close();toast("تم تحديث الطلب.")}catch(err){toast(err.message,true)}
   });
+  byId("resetAllPasswordsBtn").addEventListener("click",async ()=>{
+    if(!confirm("Reset Password لكل الحسابات النشطة إلى 123456؟"))return;
+    try{
+      const out=await accountAction({action:"bulk_reset_default"});
+      toast(`تم Reset ${out.results?.length||0} حساب إلى 123456.`);
+      await refreshState();
+    }catch(err){toast(err.message,true)}
+  });
   byId("newUserBtn").addEventListener("click",()=>open("userDialog"));
   byId("userForm").addEventListener("submit",async e=>{
-    e.preventDefault();try{await accountAction({action:"create_user",name:byId("newUserName").value.trim(),username:byId("newUsername").value.trim().toLowerCase(),role:byId("newUserRole").value,password:byId("newUserPassword").value});byId("userDialog").close();e.target.reset();toast("تم إنشاء الحساب.");await refreshState()}catch(err){toast(err.message,true)}
+    e.preventDefault();try{await accountAction({action:"create_user",name:byId("newUserName").value.trim(),username:byId("newUsername").value.trim().toLowerCase(),role:byId("newUserRole").value});byId("userDialog").close();e.target.reset();toast("تم إنشاء الحساب.");await refreshState()}catch(err){toast(err.message,true)}
   });
 
   document.body.addEventListener("click",async e=>{
@@ -270,8 +278,9 @@
       byId("manageRequestId").value=r.id;byId("manageRequestStatus").value=r.status;byId("manageRequestResponse").value=r.response||"";open("requestManageDialog");return;
     }
     if(btn.dataset.userReset){
-      const p=person(btn.dataset.userReset), pass=prompt(`Temporary password جديد لـ ${p?.name} (6 أحرف على الأقل):`);if(!pass)return;
-      try{await accountAction({action:"reset_password",user_id:p.id,password:pass});toast("تم Reset Password وسيُطلب تغييره عند الدخول.")}catch(err){toast(err.message,true)}return;
+      const p=person(btn.dataset.userReset); if(!p)return;
+      if(!confirm(`Reset password لـ ${p.name} إلى 123456؟`))return;
+      try{await accountAction({action:"reset_password",user_id:p.id});toast(`تم Reset Password لـ ${p.name} إلى 123456.`);await refreshState()}catch(err){toast(err.message,true)}return;
     }
     if(btn.dataset.userEdit){
       const p=person(btn.dataset.userEdit);if(!p)return;

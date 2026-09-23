@@ -7,7 +7,7 @@
   <title>Brivviant Studio — Realtime Tasks</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/brivviant-logo.png">
-  <link rel="stylesheet" href="style.css?v=20260923-roles3">
+  <link rel="stylesheet" href="style.css?v=20260923-accounts4">
 </head>
 <body>
   <script>
@@ -116,7 +116,7 @@
       <section id="teamView" class="view">
         <div class="section-head">
           <div><h3>Team & Accounts</h3><p class="muted">إدارة الحسابات للـCEO فقط.</p></div>
-          <button id="newUserBtn" class="primary">+ حساب جديد</button>
+          <div class="inline-actions"><button id="resetAllPasswordsBtn" class="ghost">Reset All → 123456</button><button id="newUserBtn" class="primary">+ حساب جديد</button></div>
         </div>
         <div id="teamList" class="team-grid"></div>
       </section>
@@ -199,8 +199,7 @@
       <label>الاسم<input id="newUserName" required></label>
       <label>Username<input id="newUsername" pattern="[a-z0-9.]{3,40}" required placeholder="name.surname"></label>
       <label>Job Title<select id="newUserRole"><option value="employee">Designer</option><option value="coordinator">Project Manager</option><option value="ceo">CEO</option></select></label>
-      <label>Temporary Password<input id="newUserPassword" type="password" minlength="6" maxlength="128" required></label>
-      <p class="muted">الحساب الجديد سيُطلب منه تغيير كلمة المرور عند أول دخول.</p>
+      <p class="muted">الباسورد الافتراضي لأي حساب جديد: <b>123456</b>. المستخدم يقدر يغيره بعد الدخول.</p>
       <div class="dialog-actions"><button type="button" class="ghost" data-close>إلغاء</button><button class="primary" type="submit">إنشاء</button></div>
     </form>
   </dialog>
@@ -217,7 +216,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
-  <script src="config.js?v=20260923-roles3"></script>
-  <script src="app.js?v=20260923-roles3"></script>
+  <script src="config.js?v=20260923-accounts4"></script>
+  <script src="app.js?v=20260923-accounts4"></script>
 </body>
 </html>
