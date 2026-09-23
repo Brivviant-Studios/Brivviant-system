@@ -14,12 +14,11 @@ test('only CEO distributes, at least one valid employee',()=>{
  assert.throws(()=>validateDistribution(emy,['oscar'],['oscar']));assert.throws(()=>validateDistribution(ceo,[],['oscar']));
  validateDistribution(ceo,['oscar','youssef'],['oscar','youssef']);
 });
-test('each assigned member controls only their own timer and first start remains fixed',()=>{
+test('employee starts own timer; CEO alone pauses and resumes',()=>{
  let a=assignment();const t=task(a);assert.throws(()=>transitionAssignment({...employee,id:'youssef'},t,a,'start',100));
- a=transitionAssignment(employee,t,a,'start',100);assert.equal(a.firstStartedAt,100);
- assert.throws(()=>transitionAssignment(ceo,t,a,'pause',1000));
- a=transitionAssignment(employee,t,a,'pause',1000);assert.equal(elapsedMs(a,5000),900);
- a=transitionAssignment(employee,t,a,'resume',5000);assert.equal(a.firstStartedAt,100);assert.equal(elapsedMs(a,5500),1400);
+ a=transitionAssignment(employee,t,a,'start',100);assert.throws(()=>transitionAssignment(employee,t,a,'pause',1000));
+ a=transitionAssignment(ceo,t,a,'pause',1000);assert.equal(elapsedMs(a,5000),900);
+ assert.throws(()=>transitionAssignment(employee,t,a,'resume',5000));a=transitionAssignment(ceo,t,a,'resume',5000);assert.equal(elapsedMs(a,5500),1400);
 });
 test('late submission requires reason and timer freezes while in review',()=>{
  let a=assignment();const t=task(a);a=transitionAssignment(employee,t,a,'start',100);

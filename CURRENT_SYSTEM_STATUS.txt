@@ -1,10 +1,37 @@
-Brivviant Studio System V8
-Frontend: direct static GitHub-ready UI (index.html -> config.js -> app.js)
-Supabase: https://viwaclirvokwoeqqivgr.supabase.co
-Account function: brivviant-accounts v8
-Seif Akram role: Team Leader
-Requests table/delete/execution time: enabled
-Management Activity Log: enabled
-Self Start/Pause/Resume/Submit: enabled
-Points system: enabled and stored in Supabase
-Private chat + notifications: enabled
+BRIVVIANT STUDIO — SYSTEM CONFIRMATION
+Date: 2026-09-23
+
+LIVE PROJECT
+- Supabase project: Studio
+- Project ref: viwaclirvokwoeqqivgr
+- Status checked: ACTIVE_HEALTHY
+
+CONFIRMED ACCOUNTS
+- Mohamed Zidan / mohamed.zidan / CEO
+- Mohamed Farouk / mohamed.farouk / CEO
+- Seif Akram / seif.akram / CEO
+- EMY / emy / Coordinator
+- OSCAR / oscar / Employee
+- Youssef / youssef / Employee
+
+CONFIRMED WORKFLOW
+- CEO + Coordinator can create tasks.
+- CEO only can assign tasks.
+- Employee only can start own assigned task.
+- Timer is server-based using elapsed_ms + running_since.
+- CEO only can pause/resume employee timers.
+- Employee submits with Google Drive URL.
+- Late submissions require delay reason.
+- CEO only can approve.
+- CEO only can request revisions.
+- Revision creates a new round.
+- Old revision rounds are deactivated by database trigger.
+- Employee requests/complaints are private to the creator; CEO can see/manage all.
+- Realtime enabled for bv_profiles, bv_tasks, bv_assignments, bv_requests, bv_activity.
+- Optimistic task versioning is enforced by backend.
+- Account management is handled by brivviant-accounts Edge Function.
+- Temporary passwords must be changed before operational actions.
+
+SECURITY NOTE
+Passwords are not stored in this ZIP and cannot be exported from Supabase Auth.
+Use CEO > Team > Reset Password when a credential must be replaced.
