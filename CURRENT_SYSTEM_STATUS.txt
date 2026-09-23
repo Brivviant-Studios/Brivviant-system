@@ -1,24 +1,10 @@
-BRIVVIANT STUDIO SYSTEM — V7.0 — 2026-09-23
-
-LIVE SUPABASE PROJECT
-https://viwaclirvokwoeqqivgr.supabase.co
-Migration applied: requests_timer_activity_v7
-
-V7 VERIFIED CHANGES
-- Every assigned member (including CEO/coordinator/employee) can Start, Pause, Resume and Submit ONLY their own assignment timer.
-- started_at stores the first Start time and does not change after Pause/Resume.
-- CEO cannot pause/resume another member's timer.
-- Management has a global Activity Log tab backed by public.bv_activity in Supabase.
-- Task actions logged: create, assign, start/receive, pause, resume, submit, delay, approve, revision, edit, delete.
-- Request/complaint actions logged: create, approve/set execution time, complete, reopen, delete.
-- Requests & complaints are displayed as a management table with owner, kind, details, status, sent time, approved execution time, and actions.
-- CEO can delete requests/complaints. Delete is a soft delete: hidden from the active table but retained in Supabase with deleted_at/deleted_by and audit log.
-- When a request is moved to progress (approved), an execution time is required and saved in Supabase.
-- Existing task/request/history data is preserved.
-- Realtime refresh remains enabled for bv_requests and bv_activity.
-
-DATABASE UPGRADE FILE
-/database/20260923_requests_timer_activity_v7.sql
-
-VERIFICATION
-A rollback-only transaction test passed on live Supabase for self Start/Pause/Resume, immutable first Start time, cross-user timer denial, request approval time, request deletion, and activity logging.
+Brivviant Studio System V8
+Frontend: direct static GitHub-ready UI (index.html -> config.js -> app.js)
+Supabase: https://viwaclirvokwoeqqivgr.supabase.co
+Account function: brivviant-accounts v8
+Seif Akram role: Team Leader
+Requests table/delete/execution time: enabled
+Management Activity Log: enabled
+Self Start/Pause/Resume/Submit: enabled
+Points system: enabled and stored in Supabase
+Private chat + notifications: enabled

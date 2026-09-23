@@ -1,9 +1,9 @@
 /** Apply these business rules in authenticated server-side mutations. */
-export type Role='ceo'|'coordinator'|'employee';
+export type Role='ceo'|'team_leader'|'coordinator'|'employee';
 export const TEAM=[
  {username:'mohamed.zidan',name:'Mohamed Zidan',role:'ceo'},
  {username:'mohamed.farouk',name:'Mohamed Farouk',role:'ceo'},
- {username:'seif.akram',name:'Seif Akram',role:'ceo'},
+ {username:'seif.akram',name:'Seif Akram',role:'team_leader'},
  {username:'emy',name:'EMY',role:'coordinator'},
  {username:'oscar',name:'OSCAR',role:'employee'},
  {username:'youssef',name:'Youssef',role:'employee'},
@@ -11,13 +11,13 @@ export const TEAM=[
 export type Actor={id:string;role:Role};
 export type Assignment={userId:string;status:'assigned'|'working'|'paused'|'submitted';accumulatedMs:number;runningSince:number|null;firstStartedAt:number|null;submittedAt:number|null;submissionUrl:string|null;delayReason:string|null};
 export type Task={id:string;approved:boolean;dueAt:number;assignments:Assignment[]};
-export function requireCEO(actor:Actor){if(actor.role!=='ceo')throw new Error('هذا الإجراء متاح للـCEO فقط.');}
+export function requireCEO(actor:Actor){if(!['ceo','team_leader'].includes(actor.role))throw new Error('هذا الإجراء متاح للإدارة فقط.');}
 export function validateDriveLink(value:string){
  try{const u=new URL(value);if(u.protocol!=='https:'||!['drive.google.com','docs.google.com'].includes(u.hostname)||u.username||u.password)throw new Error();return u.href;}
  catch{throw new Error('أدخل رابط Google Drive صحيحًا يبدأ بـ https.');}
 }
 export function validateTaskInput(actor:Actor,input:{title:string;brief:string;driveUrl:string;dueAt:number},now:number){
- if(!['ceo','coordinator'].includes(actor.role))throw new Error('إضافة التاسكات متاحة للإدارة وإيمي فقط.');
+ if(!['ceo','team_leader','coordinator'].includes(actor.role))throw new Error('إضافة التاسكات متاحة للإدارة وإيمي فقط.');
  if(!input.title.trim()||input.title.length>180)throw new Error('اسم التاسك مطلوب، بحد أقصى 180 حرفًا.');
  if(!input.brief.trim())throw new Error('اكتب وصفًا للتاسك.');
  if(!Number.isFinite(input.dueAt)||input.dueAt<=now)throw new Error('اختر موعد تسليم قادمًا بالتاريخ والساعة.');

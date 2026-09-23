@@ -1,0 +1,45 @@
+BRIVVIANT STUDIO SYSTEM V8 — FINAL
+
+LIVE FRONTEND
+- index.html now loads the reviewed direct frontend (app.js + style.css) instead of the stale prebuilt bundle.
+- Old generated JS/CSS bundle removed to prevent GitHub Pages from showing the old UI.
+- Service workers/caches are unregistered/cleared on load to prevent stale versions.
+
+TASK TIME
+- Every assigned account (including CEO / Team Leader) can Start / Pause / Resume / Submit its own assignment only.
+- first started_at remains saved permanently after Pause/Resume.
+- Management cannot pause another person's timer.
+- All actions are logged in Supabase.
+
+REQUESTS / COMPLAINTS
+- Table UI: owner, type, request/complaint, status, sent time, approved execution time, management actions.
+- CEO + Team Leader can approve/update execution time and delete requests/complaints.
+- Deletion is soft-delete: hidden from table but deletion remains in Activity Log/Supabase.
+
+ACTIVITY LOG
+- CEO + Team Leader have the management Activity Log.
+- Start, Pause, Resume, Submit, Assign, Approve, Revision, Request updates, Request deletion and Task deletion are persisted.
+
+POINTS
+- Points are stored per assignment in Supabase on submission.
+- >=48h early: 100
+- 24-48h early: 80
+- 12-24h early: 60
+- 6-12h early: 40
+- 1-6h early: 25
+- <1h early/on time: 10
+- Late: 0 (delay reason required)
+- Team view shows total points and last 5 submitted assignments with delay reason.
+
+ROLES
+- Seif Akram = Team Leader.
+- Team Leader has the same management permissions as CEO across DB/RLS, requests, tasks, approvals, deletion and account management.
+- Project Manager can create tasks but does not receive CEO/Team Leader management permissions.
+
+COMMUNICATION
+- Private messages and notifications remain Supabase-backed.
+- Communication view added to direct frontend.
+
+SUPABASE PROJECT
+- viwaclirvokwoeqqivgr (Studio)
+- Edge function brivviant-accounts deployed as version 8.

@@ -28,10 +28,10 @@ Deno.serve(async(req:Request)=>{
    return reply({ok:true});
   }
 
-  if(me.role!=='ceo')return reply({error:'إدارة الحسابات للـCEO فقط.'},403);
+  if(!['ceo','team_leader'].includes(me.role))return reply({error:'إدارة الحسابات للإدارة فقط.'},403);
 
   if(b.action==='create_user'){
-   if(!/^[a-z0-9.]{3,40}$/.test(b.username)||!String(b.name||'').trim()||!['ceo','coordinator','employee'].includes(b.role))
+   if(!/^[a-z0-9.]{3,40}$/.test(b.username)||!String(b.name||'').trim()||!['ceo','team_leader','coordinator','employee'].includes(b.role))
     return reply({error:'راجع الاسم واسم المستخدم والصلاحية.'},400);
    const {data,error}=await admin.auth.admin.createUser({email:email(b.username),password:DEFAULT_PASSWORD,email_confirm:true,app_metadata:{workspace:'brivviant'}});
    if(error)return reply({error:'اسم المستخدم موجود بالفعل أو البيانات غير صحيحة.'},400);
@@ -64,9 +64,9 @@ Deno.serve(async(req:Request)=>{
   }
 
   if(b.action==='update_user'){
-   if(!['ceo','coordinator','employee'].includes(b.role)||typeof b.active!=='boolean'||!String(b.name||'').trim())
+   if(!['ceo','team_leader','coordinator','employee'].includes(b.role)||typeof b.active!=='boolean'||!String(b.name||'').trim())
     return reply({error:'راجع بيانات الحساب.'},400);
-   if(target.id===user.id&&(b.role!=='ceo'||!b.active))
+   if(target.id===user.id&&(!['ceo','team_leader'].includes(b.role)||!b.active))
     return reply({error:'لا يمكن تعطيل حسابك الإداري أو إزالة صلاحياتك بنفسك.'},400);
    const {error}=await admin.from('bv_profiles').update({name:String(b.name).slice(0,100),role:b.role,active:b.active}).eq('id',target.id);if(error)throw error;
    return reply({ok:true});

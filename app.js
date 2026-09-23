@@ -10,6 +10,7 @@
 
   const state = {
     session: null, me: null, profiles: [], tasks: [], assignments: [], requests: [], activity: [],
+    notifications: [], messages: [], chatPeer: null,
     serverOffset: 0, view: "dashboard", taskFilter: "all", realtimeChannel: null, refreshTimer: null
   };
   const $ = (q) => document.querySelector(q);
@@ -18,7 +19,8 @@
   const esc = (v="") => String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const isoLocal = (d) => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
   const fmtDate = (v) => v ? new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v)) : "—";
-  const roleName = r => ({ceo:"CEO",coordinator:"Project Manager",employee:"Designer"})[r] || r;
+  const roleName = r => ({ceo:"CEO",team_leader:"Team Leader",coordinator:"Project Manager",employee:"Designer"})[r] || r;
+  const isAdmin = r => ["ceo","team_leader"].includes(r||state.me?.role);
   const nowServer = () => Date.now() + state.serverOffset;
   const fmtMs = (ms=0) => {
     ms=Math.max(0,Number(ms)||0); const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
@@ -89,6 +91,8 @@
       .on("postgres_changes",{event:"*",schema:"public",table:"bv_requests"},scheduleRefresh)
       .on("postgres_changes",{event:"*",schema:"public",table:"bv_activity"},scheduleRefresh)
       .on("postgres_changes",{event:"*",schema:"public",table:"bv_profiles"},scheduleRefresh)
+      .on("postgres_changes",{event:"*",schema:"public",table:"bv_notifications",filter:`user_id=eq.${state.session.user.id}`},()=>refreshCommunication().catch(()=>{}))
+      .on("postgres_changes",{event:"*",schema:"public",table:"bv_messages"},()=>refreshCommunication().catch(()=>{}))
       .subscribe(status=>{
         const el=byId("realtimeStatus");
         el.classList.toggle("online",status==="SUBSCRIBED");
@@ -99,16 +103,16 @@
   }
   function setRoleUI(){
     document.body.dataset.role=state.me?.role||"";
-    $$(".ceo-only").forEach(el=>el.classList.toggle("hidden",state.me?.role!=="ceo"));
-    $$(".coordinator-only").forEach(el=>el.classList.toggle("hidden",!["ceo","coordinator"].includes(state.me?.role)));
-    $$(".manager-create").forEach(el=>el.classList.toggle("hidden",!["ceo","coordinator"].includes(state.me?.role)));
-    byId("roleLabel").textContent=roleName(state.me?.role);
+    const admin=isAdmin();
+    $$(".ceo-only").forEach(el=>el.classList.toggle("hidden",!admin));
+    $$(".coordinator-only").forEach(el=>el.classList.toggle("hidden",!["ceo","team_leader","coordinator"].includes(state.me?.role)));
+    $$(".manager-create").forEach(el=>el.classList.toggle("hidden",!["ceo","team_leader","coordinator"].includes(state.me?.role)));
     byId("profileChip").innerHTML=`<div class="avatar">${esc((state.me?.name||"?").slice(0,1).toUpperCase())}</div><div class="profile-text"><b>${esc(state.me?.name||"")}</b><small>${esc(state.me?.username||"")} · ${roleName(state.me?.role)}</small></div>`;
     byId("tasksSubtitle").textContent=state.me?.role==="employee"?"يظهر لك فقط ما تم توزيعه عليك.":"التاسكات المتاحة حسب صلاحيات حسابك.";
   }
   function render(){
     if(!state.me) return;
-    setRoleUI(); renderStats(); renderTasks(); renderRequests(); renderTeam(); renderActivity(); renderDashboard();
+    setRoleUI(); renderStats(); renderTasks(); renderRequests(); renderTeam(); renderActivity(); renderDashboard(); renderCommunication();
   }
   function renderStats(){
     const tasks=state.tasks, statuses=tasks.map(t=>taskStatus(t));
@@ -121,25 +125,26 @@
     byId("stats").innerHTML=cards.map(([a,b])=>`<div class="stat"><small>${a}</small><b>${b}</b></div>`).join("");
   }
   function taskCard(t,compact=false){
-    const s=taskStatus(t), aa=activeAssignments(t), mine=myAssignment(t), isCEO=state.me.role==="ceo";
+    const s=taskStatus(t), aa=activeAssignments(t), mine=myAssignment(t), admin=isAdmin();
     const late=nowServer()>new Date(t.due_at).getTime()&&!t.approved_at;
     const assignments=aa.map(a=>{
       const p=person(a.user_id), live=Number(a.elapsed_ms||0)+(a.status==="working"&&a.running_since?Math.max(0,nowServer()-new Date(a.running_since).getTime()):0);
       let btns="";
-      if(isCEO && a.status==="working") btns+=`<button data-act="pause" data-task="${t.id}" data-a="${a.id}">Pause</button>`;
-      if(isCEO && a.status==="paused") btns+=`<button data-act="resume" data-task="${t.id}" data-a="${a.id}">Resume</button>`;
-      return `<div class="assignment"><div><div class="name">${esc(p?.name||"Employee")}</div><small class="muted">${esc(a.status)}${a.delay_reason?" · سبب تأخير مسجل":""}</small></div><div class="timer" data-aid="${a.id}" data-base="${Number(a.elapsed_ms||0)}" data-status="${esc(a.status)}" data-running="${esc(a.running_since||"")}">${fmtMs(live)}</div><div class="assignment-actions">${btns}</div></div>`;
+      if(a.user_id===state.me.id && a.status==="assigned") btns+=`<button class="primary" data-act="start" data-task="${t.id}" data-a="${a.id}">Start</button>`;
+      if(a.user_id===state.me.id && a.status==="working") btns+=`<button data-act="pause" data-task="${t.id}" data-a="${a.id}">Pause</button>`;
+      if(a.user_id===state.me.id && a.status==="paused") btns+=`<button data-act="resume" data-task="${t.id}" data-a="${a.id}">Resume</button>`;
+      if(a.user_id===state.me.id && ["working","paused"].includes(a.status)) btns+=`<button class="primary" data-act="submit" data-task="${t.id}" data-a="${a.id}">تسليم</button>`;
+      const score=a.submitted_at?`<span class="score-pill">+${Number(a.points_awarded||0)} نقطة</span>`:"";
+      const timing=a.started_at?`بدأ: ${fmtDate(a.started_at)}`:"لم يبدأ";
+      return `<div class="assignment"><div><div class="name">${esc(p?.name||"Member")} ${score}</div><small class="muted">${timing}${a.submitted_at?` · سلّم: ${fmtDate(a.submitted_at)}`:""}${a.delay_reason?` · سبب التأخير: ${esc(a.delay_reason)}`:""}${a.points_reason?` · ${esc(a.points_reason)}`:""}</small></div><div class="timer" data-aid="${a.id}" data-base="${Number(a.elapsed_ms||0)}" data-status="${esc(a.status)}" data-running="${esc(a.running_since||"")}">${fmtMs(live)}</div><div class="assignment-actions">${btns}</div></div>`;
     }).join("");
     let actions="";
-    if(isCEO){
+    if(admin){
       actions+=`<button data-act="assign" data-task="${t.id}">توزيع</button>`;
       actions+=`<button data-act="edit" data-task="${t.id}">تعديل</button>`;
       if(aa.length&&aa.every(a=>a.status==="submitted")&&!t.approved_at) actions+=`<button class="primary" data-act="approve" data-task="${t.id}">اعتماد التسليم</button>`;
       if(aa.length) actions+=`<button data-act="revision" data-task="${t.id}">طلب تعديلات</button>`;
-    }
-    if(state.me.role==="employee"&&mine){
-      if(mine.status==="assigned") actions+=`<button class="primary" data-act="start" data-task="${t.id}" data-a="${mine.id}">بدء المشروع</button>`;
-      if(["working","paused"].includes(mine.status)) actions+=`<button class="primary" data-act="submit" data-task="${t.id}" data-a="${mine.id}">تسليم</button>`;
+      actions+=`<button class="danger" data-act="delete" data-task="${t.id}">حذف التاسك</button>`;
     }
     return `<article class="task-card" data-task-card="${t.id}">
       <div class="task-top"><div><h4 class="task-title">${esc(t.title)}</h4><div class="task-meta">
@@ -158,25 +163,51 @@
     byId("tasksList").innerHTML=tasks.length?tasks.map(t=>taskCard(t)).join(""):`<div class="empty">لا توجد Tasks مطابقة.</div>`;
   }
   function renderRequests(){
-    const rows=state.requests;
-    byId("requestsList").innerHTML=rows.length?rows.map(r=>{
+    const rows=state.requests, admin=isAdmin();
+    const labels={equipment:"طلب تجهيز",fault:"عطل",complaint:"شكوى",other:"أخرى"}, statuses={open:"بانتظار المراجعة",progress:"موافق عليه / قيد التنفيذ",done:"تم التنفيذ"};
+    if(!rows.length){byId("requestsList").innerHTML=`<div class="empty">لا توجد طلبات حاليًا.</div>`;return;}
+    byId("requestsList").innerHTML=`<div class="panel table-scroll"><table class="data-table"><thead><tr><th>صاحب الطلب</th><th>النوع</th><th>الطلب / الشكوى</th><th>الحالة</th><th>تاريخ الإرسال</th><th>وقت التنفيذ</th>${admin?"<th>إدارة</th>":""}</tr></thead><tbody>${rows.map(r=>{
       const p=person(r.created_by);
-      return `<article class="request-card"><div class="request-head"><div><b>${esc(r.title)}</b><div><small>${esc(r.kind)} · ${esc(p?.name||"")} · ${fmtDate(r.created_at)}</small></div></div><span class="badge ${r.status==="done"?"mint":r.status==="progress"?"blue":""}">${esc(r.status)}</span></div>
-      <p>${esc(r.body)}</p>${r.response?`<div class="response-box"><b>رد الإدارة</b><div>${esc(r.response)}</div></div>`:""}
-      ${state.me.role==="ceo"?`<div class="task-actions"><button data-request-manage="${r.id}">إدارة الطلب</button></div>`:""}</article>`;
-    }).join(""):`<div class="empty">لا توجد طلبات حاليًا.</div>`;
+      return `<tr><td><b>${esc(p?.name||"")}</b></td><td>${esc(labels[r.kind]||r.kind)}</td><td><b>${esc(r.title)}</b><small class="table-detail">${esc(r.body)}</small>${r.response?`<span class="response-inline">رد الإدارة: ${esc(r.response)}</span>`:""}</td><td><span class="badge ${r.status==="done"?"mint":r.status==="progress"?"blue":""}">${esc(statuses[r.status]||r.status)}</span></td><td>${fmtDate(r.created_at)}</td><td>${r.execution_due_at?`${fmtDate(r.execution_due_at)}${r.approved_at?`<small class="table-detail">اعتمد: ${fmtDate(r.approved_at)}</small>`:""}`:"—"}</td>${admin?`<td><div class="inline-actions"><button data-request-manage="${r.id}">متابعة</button><button class="danger" data-request-delete="${r.id}">حذف</button></div></td>`:""}</tr>`;
+    }).join("")}</tbody></table></div>`;
   }
   function renderTeam(){
-    if(state.me.role!=="ceo") return;
-    byId("teamList").innerHTML=state.profiles.map(p=>`<article class="user-card"><div class="request-head"><div><h4>${esc(p.name)}</h4><small>${esc(p.username)}</small></div><span class="badge ${p.active?"mint":"danger"}">${p.active?"Active":"Disabled"}</span></div><div class="task-meta" style="margin-top:10px"><span class="badge blue">${roleName(p.role)}</span>${p.must_change?`<span class="badge warn">Must change password</span>`:""}</div><div class="password-reference"><small>Default / Reset Password</small><b>123456</b></div><div class="actions">
-    <button data-user-edit="${p.id}">تعديل</button>${p.id!==state.me.id?`<button data-user-reset="${p.id}">Reset → 123456</button>`:""}</div></article>`).join("");
+    if(!isAdmin()) return;
+    const historyFor=id=>state.assignments.filter(a=>a.user_id===id&&a.submitted_at).sort((a,b)=>new Date(b.submitted_at)-new Date(a.submitted_at));
+    byId("teamList").innerHTML=state.profiles.map(p=>{
+      const history=historyFor(p.id), total=history.reduce((n,a)=>n+Number(a.points_awarded||0),0), recent=history.slice(0,5);
+      return `<article class="user-card performance-card"><div class="request-head"><div><h4>${esc(p.name)}</h4><small>${esc(p.username)}</small></div><span class="badge ${p.active?"mint":"danger"}">${p.active?"Active":"Disabled"}</span></div><div class="task-meta" style="margin-top:10px"><span class="badge blue">${roleName(p.role)}</span><span class="score-total">${total} نقطة</span></div><div class="password-reference"><small>Default / Reset Password</small><b>123456</b></div><div class="recent-deliveries"><b>آخر التسليمات</b>${recent.length?recent.map(a=>{const t=state.tasks.find(x=>x.id===a.task_id);return `<div class="delivery-row"><span>${esc(t?.title||"تاسك مؤرشف")}</span><strong>+${Number(a.points_awarded||0)}</strong><small>${fmtDate(a.submitted_at)}${a.delay_reason?` · سبب التأخير: ${esc(a.delay_reason)}`:""}</small></div>`}).join(""):`<small class="muted">لا توجد تسليمات بعد.</small>`}</div><div class="actions"><button data-user-edit="${p.id}">تعديل</button>${p.id!==state.me.id?`<button data-user-reset="${p.id}">Reset → 123456</button>`:""}</div></article>`;
+    }).join("");
   }
   function renderActivity(){
-    const rows=state.activity.filter(a=>{
-      const t=state.tasks.find(x=>x.id===a.task_id); return !a.task_id||t;
-    });
-    const html=rows.length?rows.map(a=>`<div class="activity-item"><b>${esc(a.action)}</b><div>${esc(a.detail||"")}</div><small>${esc(person(a.actor)?.name||"")} · ${fmtDate(a.created_at)}</small></div>`).join(""):`<div class="empty">لا يوجد نشاط.</div>`;
-    byId("activityList").innerHTML=html;
+    if(!isAdmin()) return;
+    const rows=state.activity;
+    byId("activityList").innerHTML=rows.length?rows.map(a=>{const t=a.task_id?state.tasks.find(x=>x.id===a.task_id):null;const r=a.request_id?state.requests.find(x=>x.id===a.request_id):null;return `<tr><td><b>${esc(person(a.actor)?.name||"")}</b></td><td>${esc(a.action)}</td><td>${esc(t?.title||r?.title||(a.task_id?"تاسك مؤرشف":a.request_id?"طلب/شكوى مؤرشفة":"النظام"))}</td><td>${esc(a.detail||"—")}</td><td>${fmtDate(a.created_at)}</td></tr>`}).join(""):`<tr><td colspan="5"><div class="empty">لا يوجد نشاط.</div></td></tr>`;
+  }
+  async function communicate(name,payload={}){
+    const {data,error}=await SB.rpc("bv_communicate",{p_action:name,p:payload});
+    if(error) throw new Error(error.message||"تعذر تنفيذ عملية التواصل.");
+    return data;
+  }
+  async function refreshCommunication(){
+    if(!state.session||!state.me)return;
+    const [nres,mres]=await Promise.all([
+      SB.from("bv_notifications").select("*").eq("user_id",state.me.id).order("id",{ascending:false}).limit(100),
+      state.chatPeer?SB.from("bv_messages").select("*").or(`and(sender_id.eq.${state.me.id},recipient_id.eq.${state.chatPeer}),and(sender_id.eq.${state.chatPeer},recipient_id.eq.${state.me.id})`).order("id",{ascending:true}).limit(200):Promise.resolve({data:[],error:null})
+    ]);
+    if(!nres.error)state.notifications=nres.data||[];
+    if(!mres.error)state.messages=mres.data||[];
+    renderCommunication();
+  }
+  function renderCommunication(){
+    if(!state.me)return;
+    byId("chatContacts").innerHTML=state.profiles.filter(p=>p.id!==state.me.id).map(p=>`<button class="contact-card ${state.chatPeer===p.id?"active":""}" data-chat-peer="${p.id}"><span class="avatar">${esc(p.name.slice(0,1))}</span><span><b>${esc(p.name)}</b><small>${roleName(p.role)}${p.active?"":" · Disabled"}</small></span></button>`).join("");
+    const unread=state.notifications.filter(n=>!n.read_at).length;byId("notificationCount").textContent=String(unread);
+    byId("notificationsList").innerHTML=state.notifications.length?state.notifications.slice(0,30).map(n=>`<button class="notice-card ${n.read_at?"":"unread"}" data-notice="${n.id}"><b>${esc(n.title)}</b><small>${fmtDate(n.created_at)}</small></button>`).join(""):`<div class="empty">لا توجد إشعارات.</div>`;
+    const peer=person(state.chatPeer);byId("chatPeerLabel").textContent=peer?peer.name:"اختر عضو";
+    byId("chatDraft").disabled=!peer;byId("chatSendBtn").disabled=!peer;
+    byId("chatMessages").innerHTML=peer?(state.messages.length?state.messages.map(m=>`<div class="chat-bubble ${m.sender_id===state.me.id?"mine":"theirs"}"><p>${esc(m.body)}</p><small>${fmtDate(m.created_at)}${m.sender_id===state.me.id?` · ${m.read_at?"مقروءة":"مرسلة"}`:""}</small></div>`).join(""):`<div class="empty">ابدأ أول رسالة.</div>`):`<div class="empty">اختار عضوًا من القائمة.</div>`;
+    byId("chatMessages").scrollTop=byId("chatMessages").scrollHeight;
   }
   function renderDashboard(){
     const current=state.tasks.filter(t=>taskStatus(t)!=="approved").slice(0,6);
@@ -193,7 +224,7 @@
   }
   function switchView(v){
     state.view=v; $$(".view").forEach(x=>x.classList.toggle("active",x.id===`${v}View`)); $$("#nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===v));
-    byId("viewTitle").textContent=({dashboard:"Dashboard",tasks:"Tasks",requests:"Requests",team:"Team",activity:"Activity Log"})[v]||v;
+    byId("viewTitle").textContent=({dashboard:"Dashboard",tasks:"Tasks",requests:"Requests",communication:"Communication",team:"Team & Points",activity:"Activity Log"})[v]||v;if(v==="communication")refreshCommunication().catch(e=>toast(e.message,true));
   }
   function taskById(id){return state.tasks.find(t=>t.id===id)}
   function forcePasswordChange(){
@@ -216,7 +247,7 @@
       return;
     }
     byId("loginOverlay").classList.add("hidden"); byId("shell").classList.remove("hidden");
-    try{await refreshState();subscribeRealtime()}catch(e){toast(e.message,true)}
+    try{await refreshState();subscribeRealtime();await refreshCommunication()}catch(e){toast(e.message,true)}
   });
   byId("logoutBtn").addEventListener("click",()=>SB.auth.signOut());
   byId("changePasswordBtn").addEventListener("click",()=>{byId("passwordForceText").textContent="";byId("passwordCancelBtn").classList.remove("hidden");open("passwordDialog")});
@@ -245,7 +276,7 @@
   });
   byId("submitForm").addEventListener("submit",async e=>{
     e.preventDefault();const id=byId("submitTaskId").value,t=taskById(id);
-    try{await action("submit",{task_id:id,version:t.version,assignment_id:byId("submitAssignmentId").value,submission_url:byId("submissionUrl").value.trim(),delay_reason:byId("submissionDelay").value.trim()});byId("submitDialog").close();e.target.reset();toast("تم التسليم للـCEO.")}catch(err){toast(err.message,true)}
+    try{await action("submit",{task_id:id,version:t.version,assignment_id:byId("submitAssignmentId").value,submission_url:byId("submissionUrl").value.trim(),delay_reason:byId("submissionDelay").value.trim()});byId("submitDialog").close();e.target.reset();toast("تم التسليم واحتساب النقاط تلقائيًا.")}catch(err){toast(err.message,true)}
   });
   byId("revisionForm").addEventListener("submit",async e=>{
     e.preventDefault();const id=byId("revisionTaskId").value,t=taskById(id);
@@ -256,7 +287,7 @@
     e.preventDefault();try{await action("create_request",{kind:byId("requestKind").value,title:byId("requestTitle").value.trim(),body:byId("requestBody").value.trim()});byId("requestDialog").close();e.target.reset();toast("تم إرسال الطلب.")}catch(err){toast(err.message,true)}
   });
   byId("requestManageForm").addEventListener("submit",async e=>{
-    e.preventDefault();try{await action("update_request",{id:byId("manageRequestId").value,status:byId("manageRequestStatus").value,response:byId("manageRequestResponse").value.trim()});byId("requestManageDialog").close();toast("تم تحديث الطلب.")}catch(err){toast(err.message,true)}
+    e.preventDefault();try{const status=byId("manageRequestStatus").value,due=byId("manageRequestDue").value;await action("update_request",{id:byId("manageRequestId").value,status,response:byId("manageRequestResponse").value.trim(),execution_due_at:due?new Date(due).toISOString():""});byId("requestManageDialog").close();toast("تم تحديث الطلب.")}catch(err){toast(err.message,true)}
   });
   byId("resetAllPasswordsBtn").addEventListener("click",async ()=>{
     if(!confirm("Reset Password لكل الحسابات النشطة إلى 123456؟"))return;
@@ -271,12 +302,27 @@
     e.preventDefault();try{await accountAction({action:"create_user",name:byId("newUserName").value.trim(),username:byId("newUsername").value.trim().toLowerCase(),role:byId("newUserRole").value});byId("userDialog").close();e.target.reset();toast("تم إنشاء الحساب.");await refreshState()}catch(err){toast(err.message,true)}
   });
 
+  byId("chatForm").addEventListener("submit",async e=>{
+    e.preventDefault();if(!state.chatPeer)return;const body=byId("chatDraft").value.trim();if(!body)return;
+    try{await communicate("send",{client_id:crypto.randomUUID(),recipient_id:state.chatPeer,body});byId("chatDraft").value="";await refreshCommunication();toast("تم إرسال الرسالة.")}catch(err){toast(err.message,true)}
+  });
+  byId("markNotificationsBtn").addEventListener("click",async()=>{
+    const through=state.notifications[0]?.id;if(!through)return;try{await communicate("read_all",{through});await refreshCommunication();}catch(err){toast(err.message,true)}
+  });
+
   document.body.addEventListener("click",async e=>{
     const btn=e.target.closest("button"); if(!btn)return;
     if(btn.dataset.requestManage){
       const r=state.requests.find(x=>x.id===btn.dataset.requestManage);if(!r)return;
-      byId("manageRequestId").value=r.id;byId("manageRequestStatus").value=r.status;byId("manageRequestResponse").value=r.response||"";open("requestManageDialog");return;
+      byId("manageRequestId").value=r.id;byId("manageRequestStatus").value=r.status;byId("manageRequestDue").value=r.execution_due_at?isoLocal(r.execution_due_at):"";byId("manageRequestResponse").value=r.response||"";open("requestManageDialog");return;
     }
+    if(btn.dataset.requestDelete){
+      const r=state.requests.find(x=>x.id===btn.dataset.requestDelete);if(!r)return;
+      if(!confirm(`حذف الطلب/الشكوى «${r.title}»؟ سيختفي من الجدول ويظل الحذف محفوظًا في الـLog.`))return;
+      try{await action("delete_request",{id:r.id});toast("تم حذف الطلب/الشكوى وحفظ العملية في الـLog.")}catch(err){toast(err.message,true)}return;
+    }
+    if(btn.dataset.chatPeer){state.chatPeer=btn.dataset.chatPeer;await refreshCommunication();return;}
+    if(btn.dataset.notice){const n=state.notifications.find(x=>String(x.id)===btn.dataset.notice);if(n){try{await communicate("read_notification",{id:n.id});await refreshCommunication();}catch(err){toast(err.message,true)}}return;}
     if(btn.dataset.userReset){
       const p=person(btn.dataset.userReset); if(!p)return;
       if(!confirm(`Reset password لـ ${p.name} إلى 123456؟`))return;
@@ -286,10 +332,10 @@
       const p=person(btn.dataset.userEdit);if(!p)return;
       const name=prompt("الاسم:",p.name);if(name===null)return;
       const shown=roleName(p.role);
-      const entered=prompt("Job Title: CEO / Project Manager / Designer",shown);if(entered===null)return;
-      const roleMap={"ceo":"ceo","CEO":"ceo","project manager":"coordinator","Project Manager":"coordinator","designer":"employee","Designer":"employee"};
+      const entered=prompt("Job Title: CEO / Team Leader / Project Manager / Designer",shown);if(entered===null)return;
+      const roleMap={"ceo":"ceo","CEO":"ceo","team leader":"team_leader","Team Leader":"team_leader","project manager":"coordinator","Project Manager":"coordinator","designer":"employee","Designer":"employee"};
       const role=roleMap[String(entered).trim()]||roleMap[String(entered).trim().toLowerCase()];
-      if(!role){toast("اكتب CEO أو Project Manager أو Designer.",true);return;}
+      if(!role){toast("اكتب CEO أو Team Leader أو Project Manager أو Designer.",true);return;}
       const active=confirm("OK = Active / Cancel = Disabled");
       try{await accountAction({action:"update_user",user_id:p.id,name,role,active});toast("تم تحديث الحساب.");await refreshState()}catch(err){toast(err.message,true)}return;
     }
@@ -297,14 +343,15 @@
     try{
       if(act==="assign"){
         byId("assignTaskId").value=t.id;const current=new Set(activeAssignments(t).map(a=>a.user_id));
-        byId("assignUsers").innerHTML=state.profiles.filter(p=>p.role==="employee"&&p.active).map(p=>`<label class="check-row"><input type="checkbox" value="${p.id}" ${current.has(p.id)?"checked":""}><span><b>${esc(p.name)}</b><small class="muted">${esc(p.username)}</small></span></label>`).join("");open("assignDialog");
+        byId("assignUsers").innerHTML=state.profiles.filter(p=>p.active).map(p=>`<label class="check-row"><input type="checkbox" value="${p.id}" ${current.has(p.id)?"checked":""}><span><b>${esc(p.name)}</b><small class="muted">${esc(p.username)}</small></span></label>`).join("");open("assignDialog");
       }else if(act==="edit"){
         byId("taskId").value=t.id;byId("taskDialogTitle").textContent="تعديل Task";byId("taskTitle").value=t.title;byId("taskBrief").value=t.brief;byId("taskDrive").value=t.drive_url||"";byId("taskDue").value=isoLocal(t.due_at);open("taskDialog");
       }else if(act==="start"){await action("start",{task_id:t.id,version:t.version,assignment_id:btn.dataset.a});toast("بدأ التايمر.")}
-      else if(act==="pause"){await action("pause",{task_id:t.id,version:t.version,assignment_id:btn.dataset.a});toast("تم إيقاف التايمر بواسطة CEO.")}
+      else if(act==="pause"){await action("pause",{task_id:t.id,version:t.version,assignment_id:btn.dataset.a});toast("تم إيقاف التايمر.")}
       else if(act==="resume"){await action("resume",{task_id:t.id,version:t.version,assignment_id:btn.dataset.a});toast("تم استكمال التايمر.")}
       else if(act==="submit"){byId("submitTaskId").value=t.id;byId("submitAssignmentId").value=btn.dataset.a;byId("submissionUrl").value="";byId("submissionDelay").value="";open("submitDialog")}
       else if(act==="approve"){if(confirm("اعتماد التسليم نهائيًا؟")){await action("approve",{task_id:t.id,version:t.version});toast("تم اعتماد التسليم.")}}
+      else if(act==="delete"){if(confirm("حذف التاسك؟ سيختفي من القوائم ويظل السجل محفوظًا.")){await action("delete_task",{task_id:t.id,version:t.version});toast("تم حذف التاسك.")}}
       else if(act==="revision"){byId("revisionTaskId").value=t.id;byId("revisionNote").value="";byId("revisionDue").value=isoLocal(Date.now()+24*3600*1000);open("revisionDialog")}
     }catch(err){toast(err.message,true)}
   });
