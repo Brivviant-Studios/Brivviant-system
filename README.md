@@ -1,125 +1,50 @@
-# Brivviant Studio — Realtime Task System
+# Brivviant Studio — إدارة الفريق
 
-هذه النسخة مربوطة مباشرة بمشروع Supabase الحالي **Studio**:
-`viwaclirvokwoeqqivgr`
+هذه النسخة الجديدة من النظام المنشور، وليست نسخة V5 القديمة.
 
-## التشغيل السريع
-1. فك الضغط.
-2. شغّل `START_WINDOWS.bat` على Windows، أو:
-   `python -m http.server 8080`
-3. افتح:
-   `http://localhost:8080`
+## الرفع على GitHub
+1. فك ضغط الملف على جهازك.
+2. افتح مجلد Brivviant_Studio_GitHub.
+3. ارفع محتوياته إلى جذر المستودع؛ يجب أن يكون package.json في الجذر.
+4. احتفظ بمجلد .openai وملفات الإعداد المخفية عند الرفع (استخدام Git أو GitHub Desktop يحافظ عليها).
 
-يمكن نشر نفس الملفات على Netlify / Vercel Static / GitHub Pages / أي Static Hosting.
+## التشغيل
+المتطلبات: Node.js 22.13 أو أحدث وpnpm 11.25.0.
 
-## الحسابات الموجودة حاليًا
-- `mohamed.zidan` — CEO
-- `mohamed.farouk` — CEO
-- `seif.akram` — CEO
-- `emy` — Project Manager
-- `oscar` — Designer
-- `youssef` — Designer
+```sh
+npm install -g pnpm@11.25.0
+pnpm install --frozen-lockfile
+pnpm dev
+```
+افتح الرابط الذي يظهر في الطرفية.
 
-كلمات المرور لا يتم تخزينها أو تصديرها داخل الـZIP. هي موجودة في Supabase Auth.
-الـCEO يقدر يعمل Reset Password لأي حساب من شاشة **Team**.
+للبناء وتشغيل نسخة الإنتاج محليًا:
+```sh
+pnpm build
+pnpm start
+```
 
-## الصلاحيات المؤكدة
-### CEO
-- يرى جميع التاسكات.
-- يوزع التاسك على موظف أو أكثر.
-- يوقف ويستكمل Timer لأي موظف.
-- يعتمد التسليم.
-- يطلب Revision بموعد جديد.
-- يعدل التاسك.
-- يرى كل Requests / Complaints ويرد عليها.
-- يدير الحسابات ويعمل Reset Password.
-- يرى Activity Log.
+هذا مشروع React / Vinext ينتج Cloudflare Worker؛ رفعه على GitHub يحفظ الكود فقط ولا ينشر الموقع تلقائيًا. لا يعمل بمجرد تفعيل GitHub Pages ولا بفتح ملف HTML. يحتاج استضافة تدعم مخرجات Cloudflare Workers. ملفات البناء تنتج في dist، وإعداد العامل في dist/server/wrangler.json.
 
-### EMY / Project Manager
-- تدخل Tasks جديدة.
-- ترى التاسكات والإدارة التشغيلية.
-- لا توزع Tasks.
-- لا توقف Timers.
-- لا تعتمد التسليم ولا تطلب Revision.
-- لا تدير الحسابات.
+## Supabase المرتبط بالفعل
+- المشروع: Studio
+- الرابط: https://viwaclirvokwoeqqivgr.supabase.co
+- إعداد الاتصال والمفتاح العام في lib/supabase.ts.
+- جداول النظام: bv_profiles, bv_tasks, bv_assignments, bv_requests, bv_activity.
+- الحسابات وبيانات الفريق الموجودة تظل كما هي؛ هذا الملف لا يغيّر كلمات المرور ولا يضم كلمات مرور.
+- إدارة الحسابات تستخدم Edge Function المسماة brivviant-accounts، المنشورة بالفعل.
+- backend/accounts.ts هو مصدر الوظيفة. مفاتيح الإدارة تُقرأ من بيئة Supabase فقط وليست ضمن هذا الملف.
+- لا تشغّل schema.sql أو ملفات الإصلاح على المشروع الحالي مرة أخرى: قاعدة البيانات مجهزة والإصلاح مطبق. ملفات SQL المرفقة توثيق لتطور النظام وليست مثبّتًا تلقائيًا لمشروع فارغ.
 
-### Designer
-- يرى فقط Tasks الموزعة عليه.
-- يبدأ التاسك بزر **بدء المشروع**.
-- Timer يبدأ من السيرفر، وليس من ساعة الجهاز.
-- لا يستطيع Pause لنفسه؛ Pause/Resume للـCEO فقط.
-- يسلم عبر Google Drive Link.
-- لو Deadline عدى: سبب التأخير إجباري.
-- يرى Requests الخاصة به فقط.
+## الصلاحيات
+- CEO: إدارة الحسابات، إنشاء وتوزيع التاسكات، إيقاف واستكمال الوقت، اعتماد التسليم وطلب التعديلات، متابعة الطلبات والشكاوى.
+- EMY / تنسيق التاسكات: إضافة التاسكات، دون التوزيع أو الاعتماد.
+- الموظف: بدء وتسليم التكليف الخاص به، وكتابة سبب التأخير ورفع الطلبات والشكاوى.
+- إنشاء التاسك يحتاج بريفًا وموعد تسليم ورابط Drive.
+- الشكاوى يراها صاحبها والـCEO فقط.
+- البيانات محفوظة في Supabase والتحديثات لحظية؛ التايمر يعتمد على توقيت الخادم.
 
-## دورة التاسك
-Create → Assign → Designer Start → Live Timer → Submit → CEO Approve
-أو:
-Submit → CEO Request Revision → Round جديد → Start → Submit → Approve
+## التحقق المنفذ
+نجح بناء الإنتاج وفحص TypeScript واختبارات قواعد العمل. اختُبرت واجهات قاعدة البيانات للحفظ والقراءة، خصوصية الشكاوى ورد الإدارة، توزيع التاسكات، إيقاف الوقت، التسليم والاعتماد. اختبار backend/verify-live.sql يستخدم معاملة تنتهي بـROLLBACK ولا يترك سجلات اختبار.
 
-كل Action يرفع `version` للتاسك لتقليل تعارض التعديلات المتزامنة.
-
-## Realtime
-الواجهة مشتركة Live عبر Supabase Realtime على:
-- `bv_profiles`
-- `bv_tasks`
-- `bv_assignments`
-- `bv_requests`
-- `bv_activity`
-
-## الأمان
-- الواجهة تحتوي فقط على **Publishable key**، وهو مصمم للـBrowser مع RLS.
-- لا يوجد Service Role Key داخل ملفات الواجهة.
-- إدارة الحسابات تتم داخل Edge Function.
-- RLS يحدد ما يراه كل مستخدم.
-- كلمات المرور يديرها Supabase Auth.
-- الحسابات الجديدة تُجبر على تغيير كلمة المرور المؤقتة.
-
-## الملفات
-- `index.html` — الواجهة
-- `style.css` — الهوية والـresponsive layout
-- `app.js` — Auth / Tasks / Timers / Realtime / Roles
-- `config.js` — Project URL + Publishable Key فقط
-- `assets/brivviant-logo.png` — الشعار الأصلي
-- `database/full_install.sql` — مرجع تثبيت على مشروع Supabase جديد
-- `database/20260923_fix_assignment_round_activity.sql` — إصلاح Revision rounds (مطبق على المشروع الحالي)
-- `database/verification.sql` — فحوصات Read-only
-- `supabase/functions/brivviant-accounts/index.ts` — إدارة الحسابات الآمنة
-
-## مهم
-`database/full_install.sql` مخصص لمشروع جديد فقط. **لا تشغله على Studio الحالي** لأن الـBackend الحالي موجود بالفعل.
-
-
-## Job Titles in V3
-واجهة النظام تعرض الوظائف كالتالي:
-- CEO
-- Project Manager
-- Designer
-
-للتوافق مع الـBackend الحالي:
-- Project Manager = `coordinator`
-- Designer = `employee`
-
-هذا mapping داخلي فقط، والمستخدم يرى المسميات الجديدة في الـPanel.
-
-## Passwords
-- النظام الآن يسمح بكلمات مرور تبدأ من 6 أحرف.
-- كل حساب يمكنه تغيير كلمة مروره من داخل النظام.
-- الـCEO يستطيع Reset Password لحسابات الفريق من Team.
-- كلمة المرور `123456` مقبولة فنيًا في النظام الحالي.
-
-
-## Accounts V4
-- أي حساب جديد يبدأ تلقائيًا بالباسورد الافتراضي `123456`.
-- الـCEO لديه زر Reset لأي حساب إلى `123456`.
-- الـCEO لديه زر Reset All → `123456`.
-- كل مستخدم لديه Change Password ويمكنه وضع باسورد خاص به.
-- في Team Panel يظهر `Default / Reset Password: 123456` كمرجع. الباسورد الخاص بعد تغييره لا يتم تخزينه أو عرضه كنص صريح.
-- للوصول لأول مرة إذا كل باسوردات الـCEO مجهولة: اعمل Reset يدوي **لحساب CEO واحد فقط** في Supabase Auth، ادخل به، ثم استخدم Reset All من Team Panel.
-
-
-## Accounts V5
-- Team Panel reads `uses_default_password` from Supabase.
-- Displays `123456` only while the account is still on the default/reset password.
-- Displays `Changed` after the user changes their password.
-- All six current accounts were reset successfully to `123456` on 2026-09-23.
+مصدر النسخة: c32f4d613c14d6acb4286cbb3e4e8b5138651565 — 23 سبتمبر 2026.
