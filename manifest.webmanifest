@@ -1,21 +1,21 @@
 {
-  "name": "Brivviant Studio Realtime Task System — Accounts V5",
+  "name": "Brivviant Studio — Project Operations",
   "short_name": "Brivviant Studio",
-  "start_url": "./index.html?v=20260923-accounts5",
+  "start_url": "./index.html?v=20261001-v12",
   "display": "standalone",
   "background_color": "#070909",
-  "theme_color": "#070909",
+  "theme_color": "#105b55",
   "dir": "rtl",
   "lang": "ar",
   "icons": [
     {
-      "src": "assets/brivviant-logo.png",
+      "src": "pwa-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/brivviant-logo.png",
+      "src": "pwa-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

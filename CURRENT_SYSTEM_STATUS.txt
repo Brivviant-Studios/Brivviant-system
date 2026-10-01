@@ -1,37 +1,46 @@
-BRIVVIANT STUDIO — SYSTEM CONFIRMATION
-Date: 2026-09-23
+BRIVVIANT STUDIO — V12 PROJECT WORKFLOW STATUS
 
-LIVE PROJECT
-- Supabase project: Studio
-- Project ref: viwaclirvokwoeqqivgr
-- Status checked: ACTIVE_HEALTHY
+RUNTIME / UI
+- The live interface is still the original FINAL V10 static bundle.
+- index.html still loads assets/index-BRIVVIANT-FINAL-V10.js and .css unchanged.
+- V12 is additive through v11-patch.js + v11-patch.css, plus sw.js / manifest.webmanifest.
+- No React/Vite rebuild is required to deploy the ready static site.
 
-CONFIRMED ACCOUNTS
-- Mohamed Zidan / mohamed.zidan / CEO
-- Mohamed Farouk / mohamed.farouk / CEO
-- Seif Akram / seif.akram / CEO
-- EMY / emy / Coordinator
-- OSCAR / oscar / Employee
-- Youssef / youssef / Employee
+V12 WORKFLOW
+- First-time leave requests are valid and saved directly.
+- Rejected requests display the rejection reason to the requester.
+- Repeated rejected requests are escalated; Team Leader cannot reject the escalated attempt again.
+- Moving a task to Delivered archives it; history, time, submissions, audit and points remain stored.
+- Projects can be planned as staged workflow with assignee + planned hours per stage:
+  Brief Review -> Direction -> Modeling/Elements -> Rendering -> Finalization -> Delivery.
+- Stages run sequentially with individual submission / approval gates.
+- Task Owner, final approver, approval note, revisions and quality flags are retained in approval audit.
 
-CONFIRMED WORKFLOW
-- CEO + Coordinator can create tasks.
-- CEO only can assign tasks.
-- Employee only can start own assigned task.
-- Timer is server-based using elapsed_ms + running_since.
-- CEO only can pause/resume employee timers.
-- Employee submits with Google Drive URL.
-- Late submissions require delay reason.
-- CEO only can approve.
-- CEO only can request revisions.
-- Revision creates a new round.
-- Old revision rounds are deactivated by database trigger.
-- Employee requests/complaints are private to the creator; CEO can see/manage all.
-- Realtime enabled for bv_profiles, bv_tasks, bv_assignments, bv_requests, bv_activity.
-- Optimistic task versioning is enforced by backend.
-- Account management is handled by brivviant-accounts Edge Function.
-- Temporary passwords must be changed before operational actions.
+POINTS
+- Normal submission no longer awards points by itself.
+- Project points are posted on final project approval, based on actual stage hours vs planned hours.
+- Self-caused error revision or negligent pause makes that user's score for the project 0.
+- Management can add/deduct manual points with a mandatory reason.
+- Point ledger is independent from task archive/deletion state.
 
-SECURITY NOTE
-Passwords are not stored in this ZIP and cannot be exported from Supabase Auth.
-Use CEO > Team > Reset Password when a credential must be replaced.
+VOICE
+- Live Edge Function: brivviant-voice-task.
+- GEMINI_API_KEY stays in Supabase Edge Function Secrets only.
+- It rotates through a Gemini model pool and falls back to the normal/manual task flow when AI is unavailable.
+
+NOTIFICATIONS
+- Unread notifications are strongly highlighted in the UI.
+- Web Push is supported through brivviant-push + sw.js.
+- A user must grant browser/OS notification permission once; browsers do not allow sites to bypass this permission.
+- On supported mobile browsers/PWA installs, notifications can arrive while the site is not open.
+
+LANGUAGE
+- AR / EN control is added to the top bar.
+- Main workspace terminology and headings use professional project-operations copy.
+
+SUPABASE
+- The V12 database migrations and Edge Functions were applied/deployed to the live Studio project on 2026-10-01.
+- database/20261001_v12_project_workflow.sql is retained for source control / fresh environments.
+
+GITHUB
+- Package is intentionally kept below 100 files for browser upload.
