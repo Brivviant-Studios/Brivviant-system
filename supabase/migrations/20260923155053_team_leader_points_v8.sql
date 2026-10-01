@@ -1,0 +1,3 @@
+-- Remote migration history marker for 20260923155053_team_leader_points_v8.
+-- This migration is already applied on the linked production Supabase project.
+-- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.

@@ -1,0 +1,3 @@
+-- Remote migration history marker for 20260923162245_fix_bv_action_authenticated_permission_v10.
+-- This migration is already applied on the linked production Supabase project.
+-- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.

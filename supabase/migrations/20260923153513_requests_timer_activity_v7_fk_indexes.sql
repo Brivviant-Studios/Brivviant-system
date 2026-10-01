@@ -1,0 +1,3 @@
+-- Remote migration history marker for 20260923153513_requests_timer_activity_v7_fk_indexes.
+-- This migration is already applied on the linked production Supabase project.
+-- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.

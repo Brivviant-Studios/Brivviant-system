@@ -1,0 +1,3 @@
+-- Remote migration history marker for 20260923160155_relative_points_for_short_tasks_v9.
+-- This migration is already applied on the linked production Supabase project.
+-- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.

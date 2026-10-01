@@ -1,0 +1,3 @@
+-- Remote migration history marker for 20260923004419_fix_assignment_round_activity.
+-- This migration is already applied on the linked production Supabase project.
+-- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.

@@ -1,0 +1,3 @@
+-- Remote migration history marker for 20261001122735_v12_action_workflow.
+-- This migration is already applied on the linked production Supabase project.
+-- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.
