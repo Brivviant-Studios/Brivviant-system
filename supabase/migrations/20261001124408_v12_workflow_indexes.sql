@@ -1,3 +1,10 @@
--- Remote migration history marker for 20261001124408_v12_workflow_indexes.
--- This migration is already applied on the linked production Supabase project.
--- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.
+create index if not exists bv_activity_stage on public.bv_activity(stage_id);
+create index if not exists bv_point_ledger_created_by on public.bv_point_ledger(created_by);
+create index if not exists bv_requests_rejected_by on public.bv_requests(rejected_by);
+create index if not exists bv_quality_stage on public.bv_task_quality_flags(stage_id);
+create index if not exists bv_quality_user on public.bv_task_quality_flags(user_id);
+create index if not exists bv_quality_created_by on public.bv_task_quality_flags(created_by);
+create index if not exists bv_revisions_responsible on public.bv_task_revisions(responsible_user_id);
+create index if not exists bv_revisions_created_by on public.bv_task_revisions(created_by);
+create index if not exists bv_stages_approved_by on public.bv_task_stages(approved_by);
+create index if not exists bv_tasks_final_approved_by on public.bv_tasks(final_approved_by);
