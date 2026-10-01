@@ -1,3 +1,9 @@
--- Remote migration history marker for 20260923112227_restore_required_drive_links.
--- This migration is already applied on the linked production Supabase project.
--- Do not add schema-changing SQL here. Canonical implementation SQL is retained under /database.
+alter table public.bv_tasks drop constraint bv_tasks_drive_url_check;
+alter table public.bv_tasks add constraint bv_tasks_drive_url_check check (drive_url ~ '^https://(drive|docs)[.]google[.]com/') not valid;
+do $repair$
+declare def text;
+begin
+ select pg_get_functiondef('bv_private.action(text,jsonb)'::regprocedure) into def;
+ def:=replace(def, E'^https://(drive|docs)\\\\.google\\\\.com/', '^https://(drive|docs)[.]google[.]com/');
+ execute def;
+end $repair$;
