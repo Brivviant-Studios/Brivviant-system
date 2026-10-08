@@ -20,6 +20,24 @@ Deno.serve(async req=>{
   const {data:profile,error:profileError}=await admin.from('bv_profiles').select('role,active,must_change').eq('id',user.id).maybeSingle();
   if(profileError||!profile?.active||profile.must_change||profile.role!=='team_leader')return respond({error:'هذه الأداة مخصصة للـ Team Leader فقط.'},403);
   const body=await req.json().catch(()=>null);
+  if(body?.mode==='extract_pdf'){
+   if(!apiKey)return respond({error:'Gemini API key unavailable'},503);
+   const mime=body.mimeType==='application/pdf'?'application/pdf':'';
+   const pdf=typeof body.pdfBase64==='string'?body.pdfBase64:'';
+   if(!mime||!pdf||pdf.length>14_000_000||!/^[A-Za-z0-9+/=]+$/.test(pdf))return respond({error:'PDF غير صالح أو أكبر من الحجم المسموح (10MB).'},400);
+   const models=(Deno.env.get('GEMINI_PLANNER_MODELS')||'gemini-2.5-flash,gemini-2.5-flash-lite').split(',').map(x=>x.trim()).filter(Boolean);
+   let reason='Gemini unavailable';
+   for(const model of models){
+    try{
+     const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},body:JSON.stringify({contents:[{parts:[{text:'Extract the readable text from this exhibition project brief PDF, preserving Arabic, English, measurements, requirements and structure. Return only extracted text. If it is scanned, read it visually. Do not invent missing information.'},{inline_data:{mime_type:'application/pdf',data:pdf}}]}],generationConfig:{temperature:0,maxOutputTokens:8000}})});
+     const data=await response.json();if(!response.ok){reason=String(data?.error?.message||response.status);continue;}
+     const brief=data?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||'').join('').trim()||'';
+     if(!brief)return respond({error:'لم يتم استخراج نص قابل للقراءة من الملف.'},422);
+     return respond({brief:brief.slice(0,25000),model});
+    }catch(e){reason=String(e);}
+   }
+   return respond({error:'تعذر تحليل PDF: '+reason.slice(0,200)},503);
+  }
   if(!body||!Array.isArray(body.tasks))return respond({error:'Missing tasks'},400);
   const tasks:InputTask[]=body.tasks.slice(0,60).map((t:any)=>({
     id:safe(t.id,60),title:safe(t.title,160),hours:Number(t.hours),deadline:safe(t.deadline,16),priority:['high','normal','low'].includes(t.priority)?t.priority:'normal',brief:safe(t.brief,3000),proposals:Math.max(1,Math.min(20,Number(t.proposals)||1))
