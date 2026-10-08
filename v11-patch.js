@@ -577,7 +577,7 @@
     };
     document.addEventListener('click',e=>{
       const b=e.target.closest?.('button');if(!b)return;const txt=(b.textContent||'').trim();
-      if(txt.includes('إيقاف التايمر')||txt==='Pause Timer'){
+      if((txt.includes('إيقاف التايمر')||txt==='Pause Timer'||txt==='إيقاف الوقت'||txt==='Pause')&&!b.hasAttribute('data-v12-stage-action')){
         const reason=prompt(L('سبب إيقاف الوقت — إجباري','Pause reason — required'));if(reason===null||!reason.trim()){e.preventDefault();e.stopPropagation();return;}
         const negligence=confirm(L('هل الإيقاف بسبب تقصير شخصي؟\nOK = نعم (نقاط المشروع = 0)\nCancel = سبب خارجي/استراحة مخططة','Is this pause caused by personal negligence?\nOK = Yes (project score = 0)\nCancel = External/planned reason'));
         state.pendingPause={pause_reason:reason.trim(),pause_kind:negligence?'negligence':'external'};
