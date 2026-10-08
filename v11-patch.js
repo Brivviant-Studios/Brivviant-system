@@ -317,27 +317,47 @@
     const m=modal('إضافة تاسك بالصوت',`<div class="v11-voice"><label><span>لينك البريف — اختياري للإدارة</span><input id="v11-voice-drive" type="url" dir="ltr" placeholder="لو فاضي هيتحط Test تلقائيًا"></label><div class="v11-recorder"><div class="v11-mic">🎙</div><b id="v11-voice-status">جاهز للتسجيل</b><p>مثال: «تاسك تصميم البوابة مع أوسكار، تسليمه بكرة الساعة 6 مساءً».</p><button id="v11-record-btn" type="button">ابدأ التسجيل</button></div><small>Gemini يجرب Pool من الموديلات المتاحة. لو كلها غير متاحة، هنستخدم التفريغ الصوتي الخاص بالمتصفح + Parser بسيط، ولو ده غير متاح هنرجع للفورم العادي بدون تعطيل السيستم.</small></div>`);
     m.querySelector('#v11-record-btn').onclick=startRecording;
   }
+  let voiceStopping=false,voiceStream=null,voiceTimeout=null;
   async function startRecording(){
+    const btn=byId('v11-record-btn');if(btn)btn.disabled=true;
     try{
+      if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw Error('المتصفح لا يدعم التسجيل. افتح الموقع في Chrome أو Safari مع إذن الميكروفون.');
       const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      chunks=[];state.recognitionTranscript='';
-      recorder=new MediaRecorder(stream);recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-      recorder.onstop=()=>handleVoiceStop(new Blob(chunks,{type:recorder.mimeType||'audio/webm'}),stream);
+      voiceStream=stream;voiceStopping=false;chunks=[];state.recognitionTranscript='';
+      const preferred=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg'].find(x=>MediaRecorder.isTypeSupported?.(x));
+      recorder=new MediaRecorder(stream,preferred?{mimeType:preferred}:undefined);
+      recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
+      recorder.onstop=()=>{clearTimeout(voiceTimeout);void handleVoiceStop(new Blob(chunks,{type:recorder?.mimeType||'audio/webm'}),stream);};
+      recorder.onerror=()=>{stream.getTracks().forEach(t=>t.stop());voiceStopping=false;toast('حصل خطأ في تسجيل الصوت.',true);};
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(SR){try{recognizer=new SR();recognizer.lang='ar-EG';recognizer.continuous=true;recognizer.interimResults=false;recognizer.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)state.recognitionTranscript+=' '+e.results[i][0].transcript};recognizer.start();}catch{recognizer=null}}
-      recorder.start();
-      byId('v11-voice-status').textContent='جاري التسجيل…';const b=byId('v11-record-btn');b.textContent='إيقاف وإنشاء التاسك';b.onclick=()=>{b.disabled=true;recorder.stop();try{recognizer?.stop()}catch{}};
-    }catch(e){toast('تعذر فتح الميكروفون.',true)}
+      if(SR){try{recognizer=new SR();recognizer.lang='ar-EG';recognizer.continuous=false;recognizer.interimResults=false;recognizer.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)state.recognitionTranscript+=' '+e.results[i][0].transcript;};recognizer.start();}catch{recognizer=null;}}
+      recorder.start(1000);
+      const status=byId('v11-voice-status');if(status)status.textContent='جاري التسجيل… اضغط إيقاف لإنشاء التاسك';
+      if(btn){btn.disabled=false;btn.textContent='■ إيقاف التسجيل وإنشاء التاسك';btn.onclick=stopVoiceRecording;}
+      voiceTimeout=setTimeout(()=>{if(recorder?.state==='recording')stopVoiceRecording();},90000);
+    }catch(e){voiceStream?.getTracks().forEach(t=>t.stop());voiceStream=null;if(btn){btn.disabled=false;btn.textContent='ابدأ التسجيل';btn.onclick=startRecording;}toast(e?.message||'تعذر فتح الميكروفون.',true);}
+  }
+  function stopVoiceRecording(){
+    if(voiceStopping)return;voiceStopping=true;
+    const btn=byId('v11-record-btn'),status=byId('v11-voice-status');
+    if(btn){btn.disabled=true;btn.textContent='جاري إيقاف التسجيل…';}
+    if(status)status.textContent='جاري تجهيز التسجيل…';
+    clearTimeout(voiceTimeout);
+    try{recognizer?.stop();}catch{}
+    try{
+      if(recorder&&recorder.state!=='inactive'){recorder.requestData?.();recorder.stop();}
+      else{voiceStream?.getTracks().forEach(t=>t.stop());voiceStopping=false;if(btn)btn.disabled=false;}
+    }catch(e){voiceStream?.getTracks().forEach(t=>t.stop());voiceStopping=false;if(btn)btn.disabled=false;toast('تعذر إيقاف التسجيل: '+(e?.message||''),true);}
   }
   async function handleVoiceStop(blob,stream){
     stream.getTracks().forEach(t=>t.stop());
     byId('v11-voice-status').textContent='جاري تحليل التسجيل…';
     const drive=(byId('v11-voice-drive')?.value||'').trim();
     try{
-      const s=session();const form=new FormData();form.append('audio',blob,'voice.webm');form.append('drive_url',drive);
+      const s=session();const form=new FormData();form.append('audio',blob,blob.type.includes('mp4')?'voice.m4a':blob.type.includes('ogg')?'voice.ogg':'voice.webm');form.append('drive_url',drive);
       const res=await fetch(`${C.supabaseUrl}/functions/v1/${VOICE_FN}`,{method:'POST',headers:{apikey:C.supabasePublishableKey,Authorization:`Bearer ${s.access_token}`},body:form});
       const out=await res.json().catch(()=>({}));
-      if(res.ok&&out.ok){await refresh();closeModal();toast(`تم إنشاء «${out.title}» وتوزيعه${out.model_used?` عبر ${out.model_used}`:''}.`);patchAll();return;}
+      if(res.ok&&out.ok){await refresh();closeModal();toast(out.warning||`تم إنشاء «${out.title}» وتوزيعه${out.model_used?` عبر ${out.model_used}`:''}.`,!!out.warning);patchAll();return;}
       if(out.fallback_manual){
         const done=await browserVoiceFallback(state.recognitionTranscript,drive);
         if(done){closeModal();return;}
