@@ -20,16 +20,37 @@ Deno.serve(async req=>{
  const parts:any[]=[{text:prompt+'\n\nنص كراسة الشروط المقدم:\n'+text}];
  if(pdf)parts.push({inline_data:{mime_type:'application/pdf',data:pdf}});
  let last='';
- for(const model of (Deno.env.get('GEMINI_ANALYZER_MODELS')||'gemini-2.5-flash,gemini-2.5-flash-lite').split(',').map(x=>x.trim()).filter(Boolean)){
- try{
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),50000);
- let response:Response;try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.1,responseMimeType:'application/json',maxOutputTokens:16000}})});}finally{clearTimeout(timer);}
- const data=await response.json();if(!response.ok){last=String(data?.error?.message||response.status).slice(0,250);continue;}
- const raw=(data?.candidates?.[0]?.content?.parts||[]).map((p:any)=>p.text||'').join('');const result=JSON.parse(raw);
- if(!Array.isArray(result.items))throw Error('Unexpected response');
- return reply({result,model});
- }catch(e){last=e instanceof Error?e.message:String(e);}
+ const models=(Deno.env.get('GEMINI_ANALYZER_MODELS')||'gemini-2.5-flash,gemini-2.5-flash-lite').split(',').map(x=>x.trim()).filter(Boolean);
+ // Large tender documents can overflow one JSON response. Retry with a much smaller
+ // payload instead of surfacing a confusing JSON syntax error to the designer.
+ const modes=[
+  {name:'detailed',limit:8192,extra:'Return concise descriptions (maximum 90 Arabic characters per field), evidence maximum 70 characters, and max 60 items. Group identical repeated elements with quantity. Keep all essential design elements.'},
+  {name:'compact',limit:8192,extra:'IMPORTANT: respond in VERY COMPACT JSON, max 35 grouped items, each description <= 45 characters, evidence <= 30 characters; keep all explicit measurements and important areas. Use empty strings rather than lengthy explanations. No markdown.'},
+  {name:'minimum',limit:8192,extra:'Output a MINIMAL JSON object containing at most 20 grouped, most important design elements. Very short values (<=25 characters). Prioritize dimensions, quantity and missing data. Never truncate JSON. No markdown.'}
+ ];
+ for(const mode of modes){
+  for(const model of models){
+   try{
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),50000);
+    let response:Response;
+    try{
+     response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts:[...parts,{text:mode.extra}]}],generationConfig:{temperature:0,responseMimeType:'application/json',maxOutputTokens:mode.limit}})});
+    }finally{clearTimeout(timer);}
+    const data=await response.json();if(!response.ok){last=String(data?.error?.message||response.status).slice(0,200);continue;}
+    const candidate=data?.candidates?.[0];
+    const raw=(candidate?.content?.parts||[]).map((p:any)=>p.text||'').join('').trim();
+    if(!raw){last='Empty model response';continue;}
+    let result:any;
+    try{result=JSON.parse(raw);}catch{
+     last=candidate?.finishReason==='MAX_TOKENS'?'Gemini output exceeded token limit':'Gemini returned incomplete JSON';
+     continue;
+    }
+    if(!result||!Array.isArray(result.items)){last='Invalid report structure';continue;}
+    return reply({result,model,report_mode:mode.name,warning:mode.name==='detailed'?'':'تم تقليل تفاصيل التقرير لضمان اكتمال التحليل. راجع العناصر المستخرجة مقابل الكراسة الأصلية.'});
+   }catch(e){last=e instanceof Error?e.message:String(e);}
+  }
  }
+
  return reply({error:'تعذر التحليل بواسطة Gemini: '+last},503);
  }catch(e){return reply({error:e instanceof Error?e.message:'Server error'},500);}
 });
