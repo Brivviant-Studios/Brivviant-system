@@ -6,7 +6,7 @@ const url=Deno.env.get('SUPABASE_URL')||'';
 const service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
 const apiKey=Deno.env.get('GEMINI_API_KEY')||'';
 const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
-type InputTask={id:string;title:string;hours:number;deadline?:string;priority?:string};
+type InputTask={id:string;title:string;hours:number;deadline?:string;priority?:string;brief?:string;proposals?:number;stages?:{name:string;hours:number}[]};
 const safe=(v:unknown,n=250)=>String(v??'').trim().slice(0,n);
 
 Deno.serve(async req=>{
@@ -22,7 +22,7 @@ Deno.serve(async req=>{
   const body=await req.json().catch(()=>null);
   if(!body||!Array.isArray(body.tasks))return respond({error:'Missing tasks'},400);
   const tasks:InputTask[]=body.tasks.slice(0,60).map((t:any)=>({
-    id:safe(t.id,60),title:safe(t.title,160),hours:Number(t.hours),deadline:safe(t.deadline,16),priority:['high','normal','low'].includes(t.priority)?t.priority:'normal'
+    id:safe(t.id,60),title:safe(t.title,160),hours:Number(t.hours),deadline:safe(t.deadline,16),priority:['high','normal','low'].includes(t.priority)?t.priority:'normal',brief:safe(t.brief,3000),proposals:Math.max(1,Math.min(20,Number(t.proposals)||1))
   })).filter((t:InputTask)=>t.id&&t.title&&Number.isFinite(t.hours)&&t.hours>0&&t.hours<=500);
   if(!tasks.length)return respond({error:'أضف مهمة واحدة بمدة صحيحة على الأقل.'},400);
   if(!apiKey)return respond({error:'GEMINI_API_KEY غير مضبوط في Supabase Secrets.'},503);
@@ -31,7 +31,7 @@ Deno.serve(async req=>{
   const startDate=/^\d{4}-\d{2}-\d{2}$/.test(body.startDate)?body.startDate:new Date().toISOString().slice(0,10);
   const message=safe(body.message,2000);
   const context={startDate,hoursPerDay,workDays,tasks,message,timezone:'Africa/Cairo'};
-  const instruction=`You are an Arabic-speaking professional production scheduling assistant for Brivviant Studio. Return ONLY a JSON object with keys "reply" (Arabic helpful answer), "days" (array of {date:"YYYY-MM-DD",hours:number,load:"light"|"balanced"|"busy"|"overloaded",items:[{taskId:string,title:string,hours:number}]}), "deliveries" (array of {taskId:string,date:"YYYY-MM-DD",risk:"low"|"medium"|"high"}), "warnings" (array of Arabic strings). Produce a realistic finite schedule, not a vague essay. Respect working weekdays as JS indexes (Sunday=0), daily work capacity, start date, priorities, and task deadlines. Split long tasks into days. Include all tasks exactly for their entered effort, do not invent new task IDs or claim impossible deadlines can be met. If overload is unavoidable, report it clearly. Reply in conversational Egyptian Arabic and answer the user's message; update the proposed schedule if they ask to change priorities. The schedule is a suggestion only, not an actual assignment or saved task. Work in timezone Africa/Cairo. Do not schedule before startDate. Max 90 calendar days; if tasks exceed capacity within that horizon, explain remaining workload in warnings. Respond with valid JSON only.`;
+  const instruction=`You are an Arabic-speaking professional production scheduling assistant for Brivviant Studio. Return ONLY a JSON object with keys "reply" (Arabic helpful answer), "days" (array of {date:"YYYY-MM-DD",hours:number,load:"light"|"balanced"|"busy"|"overloaded",items:[{taskId:string,title:string,hours:number}]}), "deliveries" (array of {taskId:string,date:"YYYY-MM-DD",risk:"low"|"medium"|"high"}), "warnings" (array of Arabic strings). Produce a realistic finite schedule, not a vague essay. Respect working weekdays as JS indexes (Sunday=0), daily work capacity, start date, priorities, and task deadlines. For exhibitions and booths, always examine the project brief. If brief is missing, ask concise specific questions about booth dimensions, required deliverables, proposal count, identity constraints and revision expectations. Treat proposals as separate concept and layout production stages, not one job. Give an actionable daily next step. Split long tasks into days. Include all tasks exactly for their entered effort, do not invent new task IDs or claim impossible deadlines can be met. If overload is unavoidable, report it clearly. Reply in conversational Egyptian Arabic and answer the user's message; update the proposed schedule if they ask to change priorities. The schedule is a suggestion only, not an actual assignment or saved task. Work in timezone Africa/Cairo. Do not schedule before startDate. Max 90 calendar days; if tasks exceed capacity within that horizon, explain remaining workload in warnings. Respond with valid JSON only.`;
   const models=(Deno.env.get('GEMINI_PLANNER_MODELS')||'gemini-2.5-flash,gemini-2.5-flash-lite').split(',').map(x=>x.trim()).filter(Boolean);
   let reason='Gemini unavailable';
   for(const model of models){
