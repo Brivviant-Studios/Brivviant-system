@@ -9,16 +9,7 @@ const DEFAULT_TEST_DRIVE='https://drive.google.com/drive/folders/TEST';
 
 // Only general Gemini models that accept audio input and have a documented Free Tier.
 // Override without redeploying by setting GEMINI_VOICE_MODELS as a comma-separated list.
-const DEFAULT_MODELS=[
-  'gemini-3.8-flash',
-  'gemini-3.7-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-3.5-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-flash',
-];
+const DEFAULT_MODELS=['gemini-2.5-flash','gemini-2.5-flash-lite'];
 const MODEL_POOL=(Deno.env.get('GEMINI_VOICE_MODELS')||'')
   .split(',').map(x=>x.trim()).filter(Boolean);
 const MODELS=MODEL_POOL.length?MODEL_POOL:DEFAULT_MODELS;
@@ -157,7 +148,7 @@ ${JSON.stringify(team)}
             ]}],
             generationConfig:{
               temperature:0.1,
-              responseFormat:{text:{mimeType:'application/json',schema:outputSchema}}
+              responseMimeType:'application/json',\n              responseSchema:outputSchema
             }
           })
         });
@@ -223,7 +214,7 @@ ${JSON.stringify(team)}
       console.error('Voice assign failed',assignError.message);
       return reply({
         ok:true,task_id:taskId,title,brief,due_at:dueAt.toISOString(),drive_url:driveUrl,assignee_ids:[],
-        transcript:String(parsed.transcript||''),warning:'تم إنشاء التاسك لكن التوزيع يحتاج مراجعة يدوية.',
+        transcript:String(parsed.transcript||''),warning:'تم إنشاء التاسك، لكن توزيعه فشل. افتح التاسك ووزعه يدويًا. '+String(assignError.message||'').slice(0,140),
         model_used:usedModel,attempted_models:attempted,used_default_drive:driveUrl===DEFAULT_TEST_DRIVE
       },207);
     }
