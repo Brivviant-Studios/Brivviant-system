@@ -148,7 +148,8 @@ ${JSON.stringify(team)}
             ]}],
             generationConfig:{
               temperature:0.1,
-              responseMimeType:'application/json',\n              responseSchema:outputSchema
+              responseMimeType:'application/json',
+              responseSchema:outputSchema
             }
           })
         });
